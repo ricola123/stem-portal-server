@@ -6,14 +6,14 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const MongoClient = require('mongodb').MongoClient;
 
 // defining the Express app
 const app = express();
 
 // defining an array to work as the database (temporary solution)
 const ads = [
-  {title: 'Hello, world (again)!'}
+  {title: 'Hello, world (again)!'},
+  {name: 'Chris Chan'}
 ];
 
 // adding Helmet to enhance your API's security
@@ -28,29 +28,21 @@ app.use(cors());
 // adding morgan to log HTTP requests
 app.use(morgan('combined'));
 
+/*
 // defining an endpoint to return all ads
 app.get('/', (req, res) => {
   res.send(ads);
 });
+*/
+
+const posts = require('./routes/api/posts');
+
+app.use('/api/posts', posts);
+
 
 // starting the server
-app.listen(8081, () => {
-  console.log('listening on port 8081');
+const port = process.env.PORT || 8000;
+
+app.listen(port, () => {
+  console.log(`Server started on port ${port}`);
 });
-
-const uri = "mongodb+srv://stem-portal-dev:stem-portal-dev@stem-portal-dx28y.gcp.mongodb.net/test?retryWrites=true&w=majority";
-
-MongoClient.connect(uri, function(err, client) {
-    
-    if(err) {
-        console.log("Error occurred!", err)
-    }
-    console.log("Connected...")
-    const collection = client.db("test").collection("devices");
-    // perform actions on the collection object
-    collection.insertOne({name: 'chow'})
-    client.close();
-    
-});
-
-console.log("FUCK U GIT");
