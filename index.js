@@ -36,8 +36,10 @@ app.get('/', (req, res) => {
 */
 
 const posts = require('./routes/api/posts');
+const register = require('./routes/api/register');
 
 app.use('/api/posts', posts);
+app.use('/api/register', register);
 
 
 // starting the server
