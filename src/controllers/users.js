@@ -3,9 +3,12 @@ const User = require('../models/users');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+mongoose.set('useCreateIndex', true);
+mongoose.set('useUnifiedTopology', true);
+
 module.exports = {
   add: (req, res) => {
-    const that = mongoose.connect(process.env.MONGO_URL, { useNewUrlParser : true }, err => {
+    const that = mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true }, err => {
       let result = {};
       let status = 201;
       if (!err) {
