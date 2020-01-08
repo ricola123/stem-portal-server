@@ -44,6 +44,22 @@ module.exports = {
     });
   },
   activate: (req, res) => {
-    res.status(201).send('success');
+    const { username } = req.params;
+    const { token, cancel } = req.query;
+    console.log(username, token, cancel);
+
+    User.findOne({ username }, (err, user) => {
+      if (err) res.status(400).send({ error: err, description: 'No such user' });
+      if (user.type !== 'inactive') res.status(400).send({ error: 'User already verified' })
+      Token.findOne({ _userId: user._id, token }, err => {
+        if (err) res.status(400).send({ error: err, description: 'No such token, may be expired' });
+        user.type = 'activated';
+        user.save((err, user) => {
+          if (err) res.status(500).send({ error: err });
+          res.status(200).send(user);
+        });
+      })
+    });
+    res.status(201).send('OK');
   }
 }
