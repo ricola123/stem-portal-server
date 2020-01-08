@@ -5,24 +5,37 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-const utils = require('../utils')
+const utils = require('../utils');
 
 module.exports = {
   add: (req, res) => {
-    const { username, password, email } = req.body;
-    User.findOne({ username }, user => {
-      if (user) return res.status(400).send({ error: 'An existing user has the same username' });
-      user = new User({ username, password, email, type: 'inactive' }); //inactive = not yet verified
-      user.save((err, user) => {
-        if (!err) {
+    const { username, password, email, resend } = req.body;
+
+    User.findOne({ username }).then((err, user) => {
+      if (resend) {
+        if (err) return res.status(400).send({ error: err });
+        bcrypt.compare(password, user.password).then(match => {
+          if (!match || user.email !== email) return res.status(400).send({ error: 'Mismatch credentials for resending token' });
+          Token.findOne({ _userId: user._id }).remove(err => console.log(err));
           const token = new Token({ _userId: user._id, token: crypto.randomBytes(16).toString('hex') });
           utils.sendVerifyEmail(user, token.token);
           res.status(201).send({ user });
-        } else {
-          res.status(500).send({ error: err });
-        }
-      });
-    })
+        })
+        .catch(err => res.status(500).send({ error: err }));
+      } else {
+        if (err) return res.status(400).send({ error: 'An existing user has the same username' });
+        user = new User({ username, password, email, type: 'inactive' }); //inactive = not yet verified
+        user.save((err, user) => {
+          if (!err) {
+            const token = new Token({ _userId: user._id, token: crypto.randomBytes(16).toString('hex') });
+            utils.sendVerifyEmail(user, token.token);
+            res.status(201).send({ user });
+          } else {
+            res.status(500).send({ error: err });
+          }
+        });
+      }
+    });
   },
   login: (req, res) => {
     const { username, password } = req.body;
@@ -40,7 +53,7 @@ module.exports = {
               res.status(401).send({ error: 'Authentication Error' });
             }
           })
-          .catch(err => { res.status(500).send({ error: err }) });
+          .catch(err => res.status(500).send({ error: err }));
       } else {
         res.status(404).send({ error: err });
       }
@@ -53,7 +66,7 @@ module.exports = {
 
     User.findOne({ username }, (err, user) => {
       if (err) return res.status(400).send({ error: err, description: 'No such user' });
-      if (user.type !== 'inactive') return res.status(400).send({ error: 'User already verified' })
+      if (user.type !== 'inactive') return res.status(400).send({ error: 'User already verified' });
       Token.findOne({ _userId: user._id, token }, (err, token) => {
         if (err) return res.status(400).send({ error: err, description: 'No such token, may be expired' });
         if (cancel) {
