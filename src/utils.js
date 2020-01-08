@@ -1,3 +1,4 @@
+const mailgun = require('mailgun-js');
 const jwt = require('jsonwebtoken');
 
 module.exports = {
@@ -8,7 +9,7 @@ module.exports = {
       const token = req.headers.authorization.split(' ')[1]; // Bearer <token>
       const options = {
         expiresIn: '2d',
-        issuer: 'https://www.stem-portal.edu.hk'
+        issuer: 'https://www.stem-portal.hk'
       };
       try {
         // verify makes sure that the token hasn't expired and has been issued by us
@@ -29,5 +30,20 @@ module.exports = {
       };
       res.status(401).send(result);
     }
+  },
+  sendVerifyEmail: (user, token) => {
+    const key = process.env.MAILGUN_API_KEY;
+    const domain = process.env.MAILGUN_DOMAIN;
+    const mg = mailgun({ apiKey: key, domain });
+  
+    const data = {
+      from: 'STEM Portal Robot <no-reply@stem-portal.hk>',
+      to: user.email,
+      subject: 'Activate Your STEM Portal Account Here',
+      template: 'verify-account-email', //email template is on mailgun server 
+      'v:name': user.username,
+      'v:token': token
+    };
+    mg.messages().send(data).then((err, body) => { console.log(err || body) });
   }
 };
