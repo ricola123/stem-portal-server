@@ -7,7 +7,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const logger = require('morgan');
 
-const routes = require('./routes/index.js');
+const db = require('./database')
+const routes = require('./routes/index');
+
+// set up database
+const connection = db();
 
 // defining the Express app
 const app = express();
