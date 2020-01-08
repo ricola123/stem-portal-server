@@ -14,7 +14,7 @@ module.exports = {
     user.save((err, user) => {
       if (!err) {
         const token = new Token({ _userId: user._id, token: crypto.randomBytes(16).toString('hex') });
-        utils.sendVerifyEmail(user, token);
+        utils.sendVerifyEmail(user, token.token);
         res.status(201).send({ user });
       } else {
         res.status(500).send({ error: err });
