@@ -45,5 +45,20 @@ module.exports = {
       'v:token': token
     };
     mg.messages().send(data).then((err, body) => { console.log(err || body) });
+  },
+  sendResetPasswordEmail: (user, token) => {
+    const key = process.env.MAILGUN_API_KEY;
+    const domain = process.env.MAILGUN_DOMAIN;
+    const mg = mailgun({ apiKey: key, domain });
+  
+    const data = {
+      from: 'STEM Portal Robot <no-reply@stem-portal.hk>',
+      to: user.email,
+      subject: 'Reset Your STEM Portal Account Password Here',
+      template: 'reset-password-email', //email template is on mailgun server 
+      'v:name': user.username,
+      'v:token': token
+    };
+    mg.messages().send(data).then((err, body) => { console.log(err || body) });
   }
 };
