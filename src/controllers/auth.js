@@ -2,6 +2,9 @@ const User = require('../models/users');
 const Token = require('../models/tokens');
 
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const utils = require('../utils');
+
 const jwt = require('jsonwebtoken');
 
 module.exports = {
@@ -52,5 +55,31 @@ module.exports = {
   resetPassword: (req, res) => {
     const { username, email } = req.body;
 
+    User.findOne({ username, email }, (err, user) => {
+      if (err || !user) return res.status(400).send({ error: err });
+      else {
+        Token.deleteOne({ _userId: user._id }, err => console.log(err || ''));
+        const token = new Token({ _userId: user._id, token: crypto.randomBytes(16).toString('hex') });
+        utils.sendResetPasswordEmail(user, token.token);
+        res.status(200).send();
+      }
+    });
+  },
+  acquire: (req, res) => {
+    const { username } = req.params;
+    const { token, cancel } = req.body;
+
+    User.findOne({ username }, (err, user) => {
+      if (err || !user) return res.status(400).send({ error: err });
+      Token.findOne({ _userId: user._id, token }, err => {
+        if (err) return res.status(400).send({ error: err });
+        if (cancel) {
+          Token.deleteOne({ _userId: user._id }, err => console.log(err || ''));
+          res.status(200).send({ status: 'cancelled', user: {} });
+        } else {
+          res.status(200).send({ status: 'user existed', user });
+        }
+      });
+    });
   }
 }

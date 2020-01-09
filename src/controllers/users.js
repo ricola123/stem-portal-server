@@ -53,5 +53,19 @@ module.exports = {
       const { username, email, type } = user;
       res.status(200).send({ username, email, type });
     });
+  },
+  change: (req, res) => {
+    const { username, password } = req.body;
+    const saltRounds = parseInt(process.env.SALT_ROUNDS);
+    bcrypt.hash(password, saltRounds, function(err, hash) {
+      if (err) console.log('Error hashing password for user');
+      User.updateOne({ username }, { password: hash }).then((user, err) => {
+        if (user && !err) {
+          return res.status(200).send({ user });
+        } else {
+          return res.status(404).send({ error: err });
+        }
+      });
+    });
   }
 }
