@@ -45,5 +45,13 @@ module.exports = {
       if (user) return res.status(200).send({ occupied: true });
       return res.status(404).send({ occupied: false });
     });
+  },
+  self: (req, res) => {
+    const { username } = req.decoded;
+    User.findOne({ username }, (err, user) => {
+      if (err || !user) return res.status(404).send({ type: 'visitor' });
+      const { username, email, type } = user;
+      res.status(200).send({ username, email, type });
+    });
   }
 }

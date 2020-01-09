@@ -12,8 +12,8 @@ module.exports = {
         bcrypt.compare(password, user.password)
           .then(match => {
             if (match) {
-              const payload = { user: user.username };
-              const options = { expiresIn: '7d', issuer: 'https://www.stem-portal.edu.hk' };
+              const payload = { username: user.username };
+              const options = { expiresIn: '7d', issuer: 'https://www.stem-portal.hk' };
               const secret = process.env.JWT_SECRET;
               const token = jwt.sign(payload, secret, options);
               res.status(201).send({ user, token });
