@@ -29,6 +29,26 @@ const userSchema = new Schema({
     type: 'String',
     required: true,
     trim: true
+  },
+  firstName: {
+    type: 'String',
+    trim: true
+  },
+  lastName: {
+    type: 'String',
+    trim: true
+  },
+  gender: {
+    type: 'String',
+    trim: true
+  },
+  school: {
+    type: 'String',
+    trim: true
+  },
+  interests: {
+    type: 'Array',
+    trim: true
   }
 });
 

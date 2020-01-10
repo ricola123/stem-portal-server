@@ -39,13 +39,6 @@ module.exports = {
       }
     });
   },
-  exists: (req, res) => {
-    const { username } = req.params;
-    User.findOne({ username }, (err, user) => {
-      if (user) return res.status(200).send({ occupied: true });
-      return res.status(404).send({ occupied: false });
-    });
-  },
   self: (req, res) => {
     const { username } = req.decoded;
     User.findOne({ username }, (err, user) => {
@@ -66,6 +59,22 @@ module.exports = {
           return res.status(404).send({ error: err });
         }
       });
+    });
+  },
+  postRegistration: (req, res) => {
+    const { username, role, firstName, lastName, gender, school, interests } = req.body;
+
+    User.findOne({ username }, (err, user) => {
+      if (err || !user) return res.status(400).send({ error: err });
+      else {
+        User.updateOne({ username }, { type: role, firstName, lastName, gender, school, interests }).then((user, err) => {
+          if (user && !err) {
+            return res.status(200).send({ user });
+          } else {
+            return res.status(404).send({ error: err });
+          }
+        });
+      }
     });
   }
 }
