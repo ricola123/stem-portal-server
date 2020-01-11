@@ -1,6 +1,10 @@
 const mailgun = require('mailgun-js');
 const jwt = require('jsonwebtoken');
 
+const key = process.env.MAILGUN_API_KEY;
+const domain = process.env.MAILGUN_DOMAIN;
+const mg = mailgun({ apiKey: key, domain });
+
 module.exports = {
   validateToken: (req, res, next) => {
     const authorizationHeaader = req.headers.authorization;
@@ -18,10 +22,6 @@ module.exports = {
     }
   },
   sendVerifyEmail: (user, token) => {
-    const key = process.env.MAILGUN_API_KEY;
-    const domain = process.env.MAILGUN_DOMAIN;
-    const mg = mailgun({ apiKey: key, domain });
-  
     const data = {
       from: 'STEM Portal Robot <no-reply@stem-portal.hk>',
       to: user.email,
@@ -33,10 +33,6 @@ module.exports = {
     mg.messages().send(data).then((err, body) => { console.log(err || body) });
   },
   sendResetPasswordEmail: (user, token) => {
-    const key = process.env.MAILGUN_API_KEY;
-    const domain = process.env.MAILGUN_DOMAIN;
-    const mg = mailgun({ apiKey: key, domain });
-  
     const data = {
       from: 'STEM Portal Robot <no-reply@stem-portal.hk>',
       to: user.email,

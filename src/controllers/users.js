@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const utils = require('../utils');
 
 module.exports = {
-  add: (req, res) => {
+  create: (req, res) => {
     const { username, password, email, isResend } = req.body;
     User.findOne({ username }).then((user, err) => {
       if (isResend) {
@@ -24,7 +24,7 @@ module.exports = {
         })
         .catch(err => res.status(500).send({ error: err }));
       } else {
-        if (user) return res.status(400).send({ error: 'An existing user has the same username' });
+        if (user || err) return res.status(400).send({ error: err || 'An existing user has the same username' });
         // create a new inactive user
         user = new User({ username, password, email, type: 'inactive' });
         user.save((err, user) => {
