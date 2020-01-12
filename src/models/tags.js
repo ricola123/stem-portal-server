@@ -8,7 +8,13 @@ const tagSchema = new Schema({
     required: true,
     trim: true,
     unique: true
-  }
+  },
+  courses: [{
+    type: Schema.Types.ObjectId,
+    required: false,
+    ref: 'Course',
+    unique: false
+  }]
 });
 
 module.exports = mongoose.model('Tag', tagSchema);

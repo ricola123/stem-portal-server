@@ -18,7 +18,6 @@ module.exports = {
   },
   courseExists: (req, res) => {
     const { name } = req.params;
-    console.log(name)
     Course.findOne({ name }, (err, course) => {
       if (course) return res.status(200).send();
       res.status(404).send({ error: err });
