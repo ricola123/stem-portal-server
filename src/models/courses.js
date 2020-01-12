@@ -19,13 +19,13 @@ const courseSchema = new Schema({
     required: true,
     trim: true
   },
-  tags: {
-    type: 'Array',
+  tags: [{
+    type: 'String',
     required: true,
     trim: true
-  },
+  }],
   chapters: {
-    type: 'Array',
+    type: 'String',
     required: true,
     trim: true
   }
