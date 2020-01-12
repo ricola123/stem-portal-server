@@ -28,7 +28,11 @@ const courseSchema = new Schema({
     type: 'String',
     required: true,
     trim: true
-  }
+  },
+  ratings: [{
+    username: 'String',
+    score: 'Number'
+  }]
 });
 
 module.exports = mongoose.model('Course', courseSchema);

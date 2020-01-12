@@ -1,7 +1,10 @@
 const controller = require('../controllers/courses');
+const validateToken = require('../utils').validateToken;
 
 module.exports = router => {
-  router.route('/courses').post(controller.create);
-  router.route('/courses/:id').put(controller.update);
-  router.route('/courses/tags').get(controller.getTags);
+  router.route('/courses').get(controller.getAll);
+  router.route('/courses').post(validateToken, controller.create);
+  router.route('/courses/:id').get(validateToken, controller.read);
+  router.route('/courses/:id').put(validateToken, controller.update);
+  router.route('/courses/:id').delete(validateToken, controller.delete);
 }

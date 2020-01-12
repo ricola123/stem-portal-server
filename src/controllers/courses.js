@@ -1,6 +1,7 @@
 const Course = require('../models/courses');
 const Tag = require('../models/tags');
 const mongoose = require('mongoose');
+const User = require('../models/users');
 
 const saveTags = (tags, course_id) => {
   // save or update new tags
@@ -20,34 +21,80 @@ const saveTags = (tags, course_id) => {
 };
 
 module.exports = {
-  create: (req, res) => {
-    const { name, description, tags, chapters, author } = req.body;
-    Course.findOne({ name }, (err, course) => {
+  getAll: (req, res) => {
+    const author = req.query.teacher;
+    const options = author ? { author } : {};
+    Course.find(options).exec((err, courses) => {
       if (err) return res.status(500).send();
-      if (course) return res.status(400).send({ error: 'A course with the same name already exists' });
-      course = new Course({ name, author, description, tags, chapters });
-      saveTags(tags, course._id);
-      course.save((err, course) => {
+      const data = courses.map(({ _id, name, author, tags, ratings }) => {
+        const votes = ratings.length;
+        const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
+        return { id: _id, title: name, author, tags, votes, rating };
+      });
+      res.status(200).send(data);
+    });
+  },
+  create: (req, res) => {
+    const { username } = req.decoded;
+    User.findOne({ username }, (err, user) => {
+      if (err) return res.status(500).send();
+      if (user.type !== 'teacher') return res.status(401).send();
+
+      const { name, description, tags, chapters, author } = req.body;
+      Course.findOne({ name }, (err, course) => {
         if (err) return res.status(500).send();
-        const { _id: id, name: title, description, tags, chapters, author } = course;
-        res.status(201).send({ id, title, description, tags, chapters, author });
+        if (course) return res.status(400).send({ error: 'A course with the same name already exists' });
+        course = new Course({ name, author, description, tags, chapters });
+        saveTags(tags, course._id);
+        course.save((err, course) => {
+          if (err) return res.status(500).send();
+          const { _id: id, name: title, description, tags, chapters, author } = course;
+          res.status(201).send({ id, title, description, tags, chapters, author });
+        });
       });
     });
   },
-  update: (req, res) => {
-    const { id } = req.params;
-    const { course } = req.body;
-    delete course._id;
-    Course.updateOne({ _id: mongoose.Types.ObjectId(id) }, course, err => {
-      if (err) return res.status(500).send();
-      saveTags(course.tags, id);
-      res.status(204).send();
+  read: (req, res) => {
+    const _id = mongoose.Types.ObjectId(req.params.courseId);
+    Course.findOne({ _id }, (err, course) => {
+      if (err || !course) return res.status(500).send();
+      const { _id: id, name: title, description, tags, chapters, author } = course;
+      res.status(200).send({ id, title, description, tags, chapters, author });
     });
   },
-  getTags: (req, res) => {
-    Tag.find().sort('name').distinct('name', (err, tags) => {
-      if (err) return res.status(500).send();
-      res.status(200).send(tags);
+  update: (req, res) => {
+    const { username } = req.decoded;
+    const { id } = req.params;
+    const { course } = req.body;
+    User.findOne({ username }, (err, user) => {
+      if (err || !user) return res.status(500).send();
+      if (user.type !== 'teacher') return res.status(401).send();
+      if (username !== course.author) return res.status(401).send();
+      delete course._id;
+      Course.updateOne({ _id: mongoose.Types.ObjectId(id) }, course, err => {
+        if (err) return res.status(500).send();
+        saveTags(course.tags, id);
+        res.status(204).send();
+      });
+    });
+  },
+  delete: (req, res) => {
+    const { username } = req.decoded;
+    const { _id } = mongoose.Types.ObjectId(req.params.id);
+    User.findOne({ username }, (err, user) => {
+      if (err || !user) return res.status(500).send();
+      if (user.type !== 'teacher') return res.status(401).send();
+      if (username !== course.author) return res.status(401).send();
+      // update or remove tags
+      Tags.updateMany({ courses: _id }, { $pull: { courses: course_id } }, err => {
+        console.log(err || '');
+        Tag.deleteMany({ courses: { $size: 0 } }, err => { console.log(err || '') });
+      });
+      // delete course
+      Course.deleteOne({ _id }, err => {
+        if (err) return res.status(500).send();
+        res.status(204).send();
+      });
     });
   }
 }
