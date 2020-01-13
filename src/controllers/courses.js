@@ -55,7 +55,7 @@ module.exports = {
     });
   },
   read: (req, res) => {
-    const _id = mongoose.Types.ObjectId(req.params.courseId);
+    const _id = mongoose.Types.ObjectId(req.params.id);
     Course.findOne({ _id }, (err, course) => {
       if (err || !course) return res.status(500).send();
       const { _id: id, name: title, description, tags, chapters, author } = course;
