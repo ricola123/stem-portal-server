@@ -27,14 +27,22 @@ module.exports = {
       User.findOne({ username: studentName }, (err, user) => {
         if (err) return res.status(500).send();
         const courses = user.onGoingCourses;
-        Course.find({ _id: { $in: courses } }, (err, data) => {
+        Course.find({ _id: { $in: courses } }, (err, ongoing) => {
           if (err) return res.status(500).send({ error: err });
-          data = data.map(({ _id, name, author, tags, ratings }) => {
+          ongoing = ongoing.map(({ _id, name, author, tags, ratings }) => {
             const votes = ratings.length;
             const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
             return { id: _id, title: name, author, tags, votes, rating };
           });
-          res.status(200).send(data);
+          Course.find({ _id: { $nin: courses } }, (err, others) => {
+            if (err) return res.status(500).send({ error: err });
+            others = others.map(({ _id, name, author, tags, ratings }) => {
+              const votes = ratings.length;
+              const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
+              return { id: _id, title: name, author, tags, votes, rating };
+            });
+            res.status(200).send({ ongoing, others });
+          })
         })
       });
     } else {
