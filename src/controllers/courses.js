@@ -72,7 +72,7 @@ module.exports = {
     });
   },
   read: (req, res) => {
-    const _id = mongoose.Types.ObjectId(req.params.courseId);
+    const _id = mongoose.Types.ObjectId(req.params.id);
     Course.findOne({ _id }, (err, course) => {
       if (err || !course) return res.status(500).send();
       const { _id: id, name: title, description, tags, chapters, author } = course;
@@ -101,16 +101,19 @@ module.exports = {
     User.findOne({ username }, (err, user) => {
       if (err || !user) return res.status(500).send();
       if (user.type !== 'teacher') return res.status(401).send();
-      if (username !== course.author) return res.status(401).send();
-      // update or remove tags
-      Tags.updateMany({ courses: _id }, { $pull: { courses: course_id } }, err => {
-        console.log(err || '');
-        Tag.deleteMany({ courses: { $size: 0 } }, err => { console.log(err || '') });
-      });
-      // delete course
-      Course.deleteOne({ _id }, err => {
-        if (err) return res.status(500).send();
-        res.status(204).send();
+      Course.findOne({ _id }, (err, course) => {
+        if (err || !course) return res.status(500).send();
+        if (username !== course.author) return res.status(401).send();
+        // update or remove tags
+        Tag.updateMany({ courses: _id }, { $pull: { courses: _id } }, err => {
+          console.log(err || '');
+          Tag.deleteMany({ courses: { $size: 0 } }, err => { console.log(err || '') });
+        });
+        // delete course
+        Course.deleteOne({ _id }, err => {
+          if (err) return res.status(500).send();
+          res.status(204).send();
+        });
       });
     });
   }
