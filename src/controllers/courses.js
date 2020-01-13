@@ -28,7 +28,7 @@ module.exports = {
       if (err) return res.status(500).send();
       const data = courses.map(({ _id, name, author, tags, ratings }) => {
         const votes = ratings.length;
-        const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
+        const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes || 'No ratings yet';
         return { id: _id, title: name, author, tags, votes, rating };
       });
       res.status(200).send(data);
@@ -84,16 +84,19 @@ module.exports = {
     User.findOne({ username }, (err, user) => {
       if (err || !user) return res.status(500).send();
       if (user.type !== 'teacher') return res.status(401).send();
-      if (username !== course.author) return res.status(401).send();
-      // update or remove tags
-      Tags.updateMany({ courses: _id }, { $pull: { courses: course_id } }, err => {
-        console.log(err || '');
-        Tag.deleteMany({ courses: { $size: 0 } }, err => { console.log(err || '') });
-      });
-      // delete course
-      Course.deleteOne({ _id }, err => {
-        if (err) return res.status(500).send();
-        res.status(204).send();
+      Course.findOne({ _id }, (err, course) => {
+        if (err || !course) return res.status(500).send();
+        if (username !== course.author) return res.status(401).send();
+        // update or remove tags
+        Tag.updateMany({ courses: _id }, { $pull: { courses: _id } }, err => {
+          console.log(err || '');
+          Tag.deleteMany({ courses: { $size: 0 } }, err => { console.log(err || '') });
+        });
+        // delete course
+        Course.deleteOne({ _id }, err => {
+          if (err) return res.status(500).send();
+          res.status(204).send();
+        });
       });
     });
   }
