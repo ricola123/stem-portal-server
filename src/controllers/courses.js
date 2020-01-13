@@ -69,12 +69,12 @@ module.exports = {
       Course.findOne({ name }, (err, course) => {
         if (err) return res.status(500).send();
         if (course) return res.status(400).send({ error: 'A course with the same name already exists' });
-        course = new Course({ name, author, description, tags, chapters });
+        course = new Course({ name, author, description, tags, chapters: JSON.stringify(chapters) });
         saveTags(tags, course._id);
         course.save((err, course) => {
           if (err) return res.status(500).send();
           const { _id: id, name: title, description, tags, chapters, author } = course;
-          res.status(201).send({ id, title, description, tags, chapters, author });
+          res.status(201).send({ id, title, description, tags, chapters: JSON.parse(chapters), author });
         });
       });
     });
@@ -84,7 +84,7 @@ module.exports = {
     Course.findOne({ _id }, (err, course) => {
       if (err || !course) return res.status(500).send();
       const { _id: id, name: title, description, tags, chapters, author } = course;
-      res.status(200).send({ id, title, description, tags, chapters, author });
+      res.status(200).send({ id, title, description, tags, chapters: JSON.parse(chapters), author });
     });
   },
   update: (req, res) => {
@@ -95,6 +95,7 @@ module.exports = {
       if (err || !user) return res.status(500).send();
       if (user.type !== 'teacher') return res.status(401).send();
       if (username !== course.author) return res.status(401).send();
+      course.chapters = JSON.stringify(course.chapters);
       delete course._id;
       Course.updateOne({ _id: mongoose.Types.ObjectId(id) }, course, err => {
         if (err) return res.status(500).send();
