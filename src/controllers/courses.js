@@ -22,17 +22,34 @@ const saveTags = (tags, course_id) => {
 
 module.exports = {
   getAll: (req, res) => {
-    const author = req.query.teacher;
-    const options = author ? { author } : {};
-    Course.find(options).exec((err, courses) => {
-      if (err) return res.status(500).send();
-      const data = courses.map(({ _id, name, author, tags, ratings }) => {
-        const votes = ratings.length;
-        const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
-        return { id: _id, title: name, author, tags, votes, rating };
+    if (req.query.student) {
+      const studentName = req.query.student;
+      User.findOne({ username: studentName }, (err, user) => {
+        if (err) return res.status(500).send();
+        const courses = user.onGoingCourses;
+        Course.find({ _id: { $in: courses } }, (err, data) => {
+          if (err) return res.status(500).send({ error: err });
+          data = data.map(({ _id, name, author, tags, ratings }) => {
+            const votes = ratings.length;
+            const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
+            return { id: _id, title: name, author, tags, votes, rating };
+          });
+          res.status(200).send(data);
+        })
       });
-      res.status(200).send(data);
-    });
+    } else {
+      const author = req.query.teacher;
+      const options = author ? { author } : {};
+      Course.find(options).exec((err, courses) => {
+        if (err) return res.status(500).send();
+        const data = courses.map(({ _id, name, author, tags, ratings }) => {
+          const votes = ratings.length;
+          const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
+          return { id: _id, title: name, author, tags, votes, rating };
+        });
+        res.status(200).send(data);
+      });
+    }
   },
   create: (req, res) => {
     const { username } = req.decoded;
