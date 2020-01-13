@@ -31,14 +31,14 @@ module.exports = {
           if (err) return res.status(500).send({ error: err });
           ongoing = ongoing.map(({ _id, name, author, tags, ratings }) => {
             const votes = ratings.length;
-            const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
+            const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes || 'No ratings yet';
             return { id: _id, title: name, author, tags, votes, rating };
           });
           Course.find({ _id: { $nin: courses } }, (err, others) => {
             if (err) return res.status(500).send({ error: err });
             others = others.map(({ _id, name, author, tags, ratings }) => {
               const votes = ratings.length;
-              const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
+              const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes || 'No ratings yet';
               return { id: _id, title: name, author, tags, votes, rating };
             });
             res.status(200).send({ ongoing, others });
@@ -52,7 +52,7 @@ module.exports = {
         if (err) return res.status(500).send();
         const data = courses.map(({ _id, name, author, tags, ratings }) => {
           const votes = ratings.length;
-          const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes;
+          const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes || 'No ratings yet';
           return { id: _id, title: name, author, tags, votes, rating };
         });
         res.status(200).send(data);
