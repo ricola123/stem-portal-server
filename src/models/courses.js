@@ -32,7 +32,11 @@ const courseSchema = new Schema({
   ratings: [{
     username: 'String',
     score: 'Number'
-  }]
+  }],
+  published: {
+    type: 'Boolean',
+    default: false
+  }
 });
 
 module.exports = mongoose.model('Course', courseSchema);

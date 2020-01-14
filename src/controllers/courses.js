@@ -27,14 +27,14 @@ module.exports = {
       User.findOne({ username: studentName }, (err, user) => {
         if (err) return res.status(500).send();
         const courses = user.onGoingCourses;
-        Course.find({ _id: { $in: courses } }, (err, ongoing) => {
+        Course.find({ _id: { $in: courses }, published: true }, (err, ongoing) => {
           if (err) return res.status(500).send({ error: err });
           ongoing = ongoing.map(({ _id, name, author, tags, ratings }) => {
             const votes = ratings.length;
             const rating = ratings.reduce((total, { score }) => (total + score), 0) / votes || 'No ratings yet';
             return { id: _id, title: name, author, tags, votes, rating };
           });
-          Course.find({ _id: { $nin: courses } }, (err, others) => {
+          Course.find({ _id: { $nin: courses }, published: true }, (err, others) => {
             if (err) return res.status(500).send({ error: err });
             others = others.map(({ _id, name, author, tags, ratings }) => {
               const votes = ratings.length;
@@ -47,7 +47,7 @@ module.exports = {
       });
     } else {
       const author = req.query.teacher;
-      const options = author ? { author } : {};
+      const options = author ? { author } : { published: true };
       Course.find(options).exec((err, courses) => {
         if (err) return res.status(500).send();
         const data = courses.map(({ _id, name, author, tags, ratings }) => {
