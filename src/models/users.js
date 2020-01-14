@@ -49,7 +49,12 @@ const userSchema = new Schema({
   interests: {
     type: 'Array',
     trim: true
-  }
+  },
+  onGoingCourses: [{
+    type: Schema.Types.ObjectId,
+    trim: true,
+    unique: false
+  }]
 });
 
 // encrypt password before save
