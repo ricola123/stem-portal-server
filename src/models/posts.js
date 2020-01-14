@@ -25,8 +25,39 @@ const postSchema = new Schema({
   createdAt: {
     type: Date,
     required: true,
-    default: Date.now,
-  }
+    default: Date.now
+  },
+  cid:{
+    type: Number,
+    required: true
+  },
+  likes:{
+    type: Number,
+    required: false
+  },
+  dislikes:{
+    type: Number,
+    required: false
+  },
+  Allcomments:{
+    type: Array,
+    required: false
+  },
+  liked: {
+    type: 'Boolean',
+    required: false,
+    default: false
+  },
+  disliked: {
+    type: 'Boolean',
+    required: false,
+    default: false
+  },
+  notyetfollowed: {
+    type: 'Boolean',
+    required: false,
+    default: true
+  },
 });
 
 module.exports = mongoose.model('Post', postSchema);
