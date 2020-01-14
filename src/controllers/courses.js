@@ -83,8 +83,8 @@ module.exports = {
     const _id = mongoose.Types.ObjectId(req.params.id);
     Course.findOne({ _id }, (err, course) => {
       if (err || !course) return res.status(500).send();
-      const { _id: id, name: title, description, tags, chapters, author } = course;
-      res.status(200).send({ id, title, description, tags, chapters: JSON.parse(chapters), author });
+      const { _id: id, name: title, description, tags, chapters, author, ratings } = course;
+      res.status(200).send({ id, title, description, tags, ratings, chapters: JSON.parse(chapters), author });
     });
   },
   update: (req, res) => {
