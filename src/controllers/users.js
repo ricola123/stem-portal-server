@@ -65,6 +65,8 @@ module.exports = {
     const { username, role, firstName, lastName, gender, school, interests } = req.body;
 
     User.findOne({ username }, (err, user) => {
+      console.log(err)
+      console.log(username)
       if (err || !user) return res.status(400).send({ error: err });
       else {
         User.updateOne({ username }, { type: role, firstName, lastName, gender, school, interests }).then((user, err) => {

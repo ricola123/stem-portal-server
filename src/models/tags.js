@@ -14,6 +14,12 @@ const tagSchema = new Schema({
     required: false,
     ref: 'Course',
     unique: false
+  }],
+  posts: [{
+    type: Schema.Types.ObjectId,
+    required: false,
+    ref: 'Post',
+    unique: false
   }]
 });
 
