@@ -1,4 +1,4 @@
-const RequestError = require('../middleware/errors').RequestError;
+const StatusCodeError = require('../middleware/errors').StatusCodeError;
 
 module.exports = {
   validateInput: (schema, property = 'body') => {
@@ -15,14 +15,14 @@ module.exports = {
         const options = { expiresIn: '2d', issuer: 'https://www.stem-portal.hk' };
         try {
           const user = jwt.verify(token, process.env.JWT_SECRET, options);
-          if (role !== 'any' && role !== user.type) throw new RequestError(403, 'Forbidden');
+          if (role !== 'any' && role !== user.type) throw new StatusCodeError(403, 'Forbidden');
           req.decoded = user;
           next();
         } catch (err) {
           throw err;
         }
       } else {
-        throw new RequestError(401, 'Authentication token required');
+        throw new StatusCodeError(401, 'Authentication token required');
       }
     }
   }

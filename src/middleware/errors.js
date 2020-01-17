@@ -1,9 +1,9 @@
-class RequestError extends Error {
+class StatusCodeError extends Error {
   constructor (status, message) {
     super();
     this.status = status;
     this.message = message;
-    this.name = 'RequestError';
+    this.name = 'StatusCodeError';
   }
 }
 
@@ -14,7 +14,7 @@ module.exports = {
       case 'JsonWebTokenError':
         res.status(400).send({ status: 400, error: err.message });
         break;
-      case 'RequestError':
+      case 'StatusCodeError':
         res.status(err.status).send({ status: err.status, error: err.message });
         break;
       default: //Internal server error
@@ -23,5 +23,5 @@ module.exports = {
     }
     next();
   },
-  RequestError
+  StatusCodeError
 }

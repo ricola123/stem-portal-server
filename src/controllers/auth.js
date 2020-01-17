@@ -5,17 +5,17 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const utils = require('../utils');
 
-const RequestError = require('../middleware/errors').RequestError;
+const StatusCodeError = require('../middleware/errors').StatusCodeError;
 
 module.exports = {
   login: async (req, res) => {
     const { username, password } = req.body;
 
     const user = await User.findOne({ username }).select('-__v');
-    if (!user) throw new RequestError(401, 'Incorrect username or password');
+    if (!user) throw new StatusCodeError(401, 'Incorrect username or password');
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) throw new RequestError(401, 'Incorrect username or password');
+    if (!match) throw new StatusCodeError(401, 'Incorrect username or password');
 
     const token = utils.generateToken(user.username, user.type);
     user.set('password', undefined);
