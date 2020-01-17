@@ -21,7 +21,7 @@ const saveTags = (tags, course_id) => {
 };
 
 module.exports = {
-  getAll: (req, res) => {
+  getAll: (req, res, next) => {
     if (req.query.student) {
       const studentName = req.query.student;
       User.findOne({ username: studentName }, (err, user) => {
@@ -59,7 +59,7 @@ module.exports = {
       });
     }
   },
-  create: (req, res) => {
+  create: (req, res, next) => {
     const { username } = req.decoded;
     User.findOne({ username }, (err, user) => {
       if (err) return res.status(500).send();
@@ -79,7 +79,7 @@ module.exports = {
       });
     });
   },
-  read: (req, res) => {
+  read: (req, res, next) => {
     const _id = mongoose.Types.ObjectId(req.params.id);
     Course.findOne({ _id }, (err, course) => {
       if (err || !course) return res.status(500).send();
@@ -87,7 +87,7 @@ module.exports = {
       res.status(200).send({ id, title, description, tags, ratings, chapters: JSON.parse(chapters), author });
     });
   },
-  update: (req, res) => {
+  update: (req, res, next) => {
     const { username } = req.decoded;
     const { id } = req.params;
     const { course } = req.body;
@@ -104,7 +104,7 @@ module.exports = {
       });
     });
   },
-  delete: (req, res) => {
+  delete: (req, res, next) => {
     const { username } = req.decoded;
     const { _id } = mongoose.Types.ObjectId(req.params.id);
     User.findOne({ username }, (err, user) => {

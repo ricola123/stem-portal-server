@@ -6,7 +6,6 @@ const tags = require('./tags');
 const posts = require('./posts');
 
 module.exports = router => {
-  // router.route('/test').post((req, res) => { }) //testing
   users(router);
   auth(router);
   check(router);

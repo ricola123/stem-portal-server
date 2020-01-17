@@ -1,10 +1,10 @@
 const controller = require('../controllers/courses');
-const validateToken = require('../utils').validateToken;
+const validateRole = require('../middleware/validations').validateRole;
 
 module.exports = router => {
   router.route('/courses').get(controller.getAll);
-  router.route('/courses').post(validateToken, controller.create);
-  router.route('/courses/:id').get(validateToken, controller.read);
-  router.route('/courses/:id').put(validateToken, controller.update);
-  router.route('/courses/:id').delete(validateToken, controller.delete);
+  router.route('/courses').post(validateRole, controller.create);
+  router.route('/courses/:id').get(validateRole, controller.read);
+  router.route('/courses/:id').put(validateRole, controller.update);
+  router.route('/courses/:id').delete(validateRole, controller.delete);
 }

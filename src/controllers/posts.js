@@ -20,7 +20,7 @@ const saveTags = (tags, post_id) => {
 };
 
 module.exports = {
-  create: (req, res) => {
+  create: (req, res, next) => {
     const { username } = req.decoded;
     User.findOne({ username }, (err, user) => {
       if (err) return res.status(500).send();
@@ -40,7 +40,7 @@ module.exports = {
       });
     });
   },
-  getAll: (req, res) => {
+  getAll: (req, res, next) => {
     console.log('hi')
     Post.find({}, (err, posts) => {
       if (err) return res.status(500).send();

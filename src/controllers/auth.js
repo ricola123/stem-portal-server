@@ -5,32 +5,22 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const utils = require('../utils');
 
-const jwt = require('jsonwebtoken');
+const RequestError = require('../middleware/errors').RequestError;
 
 module.exports = {
-  login: (req, res) => {
+  login: async (req, res) => {
     const { username, password } = req.body;
-    User.findOne({ username }, (err, user) => {
-      if (!err && user) {
-        bcrypt.compare(password, user.password)
-          .then(match => {
-            if (match) {
-              const payload = { username: user.username };
-              const options = { expiresIn: '7d', issuer: 'https://www.stem-portal.hk' };
-              const secret = process.env.JWT_SECRET;
-              const token = jwt.sign(payload, secret, options);
-              res.status(201).send({ user, token });
-            } else {
-              res.status(401).send({ error: 'Authentication Error' });
-            }
-          })
-          .catch(err => res.status(500).send({ error: err }));
-      } else {
-        res.status(404).send({ error: err });
-      }
-    });
+
+    const user = await User.findOne({ username });
+    if (!user) throw new RequestError(401, 'Incorrect username or password');
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) throw new RequestError(401, 'Incorrect username or password');
+
+    const token = utils.generateToken(user.username, user.type);
+    res.status(200).send({ status: 200, user, token });
   },
-  activate: (req, res) => {
+  activate: (req, res, next) => {
     const { username } = req.params;
     const { token, cancel } = req.body;
 
@@ -52,7 +42,7 @@ module.exports = {
       })
     });
   },
-  resetPassword: (req, res) => {
+  resetPassword: (req, res, next) => {
     const { username, email } = req.body;
 
     User.findOne({ username, email }, (err, user) => {
@@ -65,7 +55,7 @@ module.exports = {
       }
     });
   },
-  acquire: (req, res) => {
+  acquire: (req, res, next) => {
     const { username } = req.params;
     const { token, cancel } = req.body;
 

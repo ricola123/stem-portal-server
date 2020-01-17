@@ -1,7 +1,7 @@
 const controller = require('../controllers/posts');
-const validateToken = require('../utils').validateToken;
+const validateRole = require('../middleware/validations').validateRole;
 
 module.exports = router => {
   router.route('/forum/posts').get(controller.getAll);
-  router.route('/forum/posts').post(validateToken, controller.create);
+  router.route('/forum/posts').post(validateRole, controller.create);
 };

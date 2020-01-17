@@ -6,20 +6,13 @@ const domain = process.env.MAILGUN_DOMAIN;
 const mg = mailgun({ apiKey: key, domain });
 
 module.exports = {
-  validateToken: (req, res, next) => {
-    const authorizationHeaader = req.headers.authorization;
-    if (authorizationHeaader) {
-      const token = authorizationHeaader.split(' ')[1]; // Bearer <token>
-      const options = { expiresIn: '2d', issuer: 'https://www.stem-portal.hk' };
-      try {
-        const result = jwt.verify(token, process.env.JWT_SECRET, options);
-        req.decoded = result;
-        next();
-      } catch (err) {
-        console.log('validateToken err:', err);
-        res.status(401).send({ error: 'Authorization error, valid token required.' });
-      }
-    }
+  generateToken: (username, type) => {
+    const payload = { username, type };
+    const options = { expiresIn: '7d', issuer: 'https://www.stem-portal.hk' };
+    const secret = process.env.JWT_SECRET;
+
+    const token = jwt.sign(payload, secret, options);
+    return token;
   },
   sendVerifyEmail: (user, token) => {
     const data = {

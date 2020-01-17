@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const utils = require('../utils');
 
 module.exports = {
-  create: (req, res) => {
+  create: (req, res, next) => {
     const { username, password, email, isResend } = req.body;
     User.findOne({ username }).then((user, err) => {
       if (isResend) {
@@ -39,7 +39,7 @@ module.exports = {
       }
     });
   },
-  self: (req, res) => {
+  self: (req, res, next) => {
     const { username } = req.decoded;
     User.findOne({ username }, (err, user) => {
       if (err || !user) return res.status(404).send({ type: 'visitor' });
@@ -47,7 +47,7 @@ module.exports = {
       res.status(200).send({ username, email, type });
     });
   },
-  change: (req, res) => {
+  change: (req, res, next) => {
     const { username, password } = req.body;
     const saltRounds = parseInt(process.env.SALT_ROUNDS);
     bcrypt.hash(password, saltRounds, function(err, hash) {
@@ -61,7 +61,7 @@ module.exports = {
       });
     });
   },
-  postRegistration: (req, res) => {
+  postRegistration: (req, res, next) => {
     const { username, role, firstName, lastName, gender, school, interests } = req.body;
 
     User.findOne({ username }, (err, user) => {

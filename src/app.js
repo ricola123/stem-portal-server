@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('express-async-errors');
 
 // importing the dependencies
 const express = require('express');
@@ -9,6 +10,7 @@ const logger = require('morgan');
 
 const db = require('./database')
 const routes = require('./routes/index');
+const errorHandler = require('./middleware/errors').errorHandler;
 
 // set up database
 const connection = db();
@@ -32,6 +34,7 @@ app.use(logger('dev'));
 
 // handle routes
 app.use('/api', routes(router));
+app.use(errorHandler);
 
 // starting the server
 const port = process.env.PORT || 8000;
