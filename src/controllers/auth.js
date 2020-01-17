@@ -11,13 +11,14 @@ module.exports = {
   login: async (req, res) => {
     const { username, password } = req.body;
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username }).select('-__v');
     if (!user) throw new RequestError(401, 'Incorrect username or password');
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) throw new RequestError(401, 'Incorrect username or password');
 
     const token = utils.generateToken(user.username, user.type);
+    user.set('password', undefined);
     res.status(200).send({ status: 200, user, token });
   },
   activate: (req, res, next) => {
