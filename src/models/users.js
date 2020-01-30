@@ -4,6 +4,19 @@ const bcrypt = require('bcrypt');
 // schema maps to a collection
 const Schema = mongoose.Schema;
 
+const myCourseSchema = new Schema({
+  inProgress: [{
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'Course'
+  }],
+  finished: [{
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'Course'
+  }]
+});
+
 const userSchema = new Schema({
   username: {
     type: 'String',
@@ -27,8 +40,7 @@ const userSchema = new Schema({
   },
   type: {
     type: 'String',
-    required: true,
-    trim: true
+    required: true
   },
   firstName: {
     type: 'String',
@@ -39,22 +51,17 @@ const userSchema = new Schema({
     trim: true
   },
   gender: {
-    type: 'String',
-    trim: true
+    type: 'String'
   },
   school: {
     type: 'String',
     trim: true
   },
-  interests: {
-    type: 'Array',
+  interests: [{
+    type: 'String',
     trim: true
-  },
-  onGoingCourses: [{
-    type: Schema.Types.ObjectId,
-    trim: true,
-    unique: false
-  }]
+  }],
+  courses: myCourseSchema
 });
 
 // encrypt password before save

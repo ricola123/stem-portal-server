@@ -22,11 +22,6 @@ const postSchema = new Schema({
     type: 'String',
     trim: true
   }],
-  createdAt: {
-    type: Date,
-    required: true,
-    default: Date.now
-  },
   cid:{
     type: Number,
     required: true
@@ -58,6 +53,6 @@ const postSchema = new Schema({
     required: false,
     default: true
   },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Post', postSchema);

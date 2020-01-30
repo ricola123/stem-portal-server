@@ -20,7 +20,12 @@ const tagSchema = new Schema({
     required: false,
     ref: 'Post',
     unique: false
-  }]
-});
+  }],
+  references: {
+    type: 'Number',
+    required: false,
+    default: 0
+  }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Tag', tagSchema);
