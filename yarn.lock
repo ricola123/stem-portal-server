@@ -247,13 +247,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bcrypt@npm:3.0.6":
-  version: 3.0.6
-  resolution: "bcrypt@npm:3.0.6"
-  dependencies:
-    nan: 2.13.2
-    node-pre-gyp: 0.12.0
-  checksum: f4051ddb33ac78c1d455e640b0ccd2fd0b7291e7534530c7e29ac6049640d17f04b01beaa575a7b2c4e365c1c057b7635e3eb952c7a8c0f20d03640fe404e25a
+"bcryptjs@npm:^2.4.3":
+  version: 2.4.3
+  resolution: "bcryptjs@npm:2.4.3"
+  checksum: 2ddc44aa220880a967892619445086b85f0b890ccb44b51b6cb994f1df2075c4c14dc0ce076d6d90f8988398ddcd21e81377eb452adeb3cec4dabe24119721be
   languageName: node
   linkType: hard
 
@@ -718,15 +715,6 @@ __metadata:
   version: 1.0.4
   resolution: "destroy@npm:1.0.4"
   checksum: bc2f61513204e5c7fbc5b7780c626292f165a2481773a143075c8544e9150b6a46ef507cde3515e78ba22a62acf73894d1d6a894e0352bc059a6d644a141a2f0
-  languageName: node
-  linkType: hard
-
-"detect-libc@npm:^1.0.2":
-  version: 1.0.3
-  resolution: "detect-libc@npm:1.0.3"
-  bin:
-    detect-libc: ./bin/detect-libc.js
-  checksum: c1f0d9ae0ac0f0b558ffee547a51dc4de58e154e2a68faf1fa3c8a20dc37741b2a339a9fcc0c0601e70afa6640b45008561e9d3adbc79fa357a388b76ca44cf6
   languageName: node
   linkType: hard
 
@@ -1394,7 +1382,7 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"iconv-lite@npm:0.4.24, iconv-lite@npm:^0.4.4":
+"iconv-lite@npm:0.4.24":
   version: 0.4.24
   resolution: "iconv-lite@npm:0.4.24"
   dependencies:
@@ -1414,15 +1402,6 @@ fsevents@~2.1.2:
   version: 1.0.1
   resolution: "ignore-by-default@npm:1.0.1"
   checksum: a5723cf6eda94be68ce70d92914d842c0e60a83b55d0a11da9e1c0968a41051d32983fdcb8e38f4c91d645e83a29cfabbf454c10e691de70cd8e9ed8c0cabf2e
-  languageName: node
-  linkType: hard
-
-"ignore-walk@npm:^3.0.1":
-  version: 3.0.3
-  resolution: "ignore-walk@npm:3.0.3"
-  dependencies:
-    minimatch: ^3.0.4
-  checksum: 77be01f47c6c3305d4566859e2709b5f6c7f7667b3f24fc8a906bf9e3b938fa63e535d9827b4f034916f6dd453a3e25746ce1b2b68f9eabe8399f8d1baf2d6d6
   languageName: node
   linkType: hard
 
@@ -2089,28 +2068,6 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"nan@npm:2.13.2":
-  version: 2.13.2
-  resolution: "nan@npm:2.13.2"
-  dependencies:
-    node-gyp: latest
-  checksum: 6c7bb420215db6e2a7ac110f80b9cb93c38d5eecffe73c614317522e4cda6ab9292572768bd710fa61551b1e864dfbae57b7318c9df3305158888c5b6114e77c
-  languageName: node
-  linkType: hard
-
-"needle@npm:^2.2.1":
-  version: 2.4.0
-  resolution: "needle@npm:2.4.0"
-  dependencies:
-    debug: ^3.2.6
-    iconv-lite: ^0.4.4
-    sax: ^1.2.4
-  bin:
-    needle: ./bin/needle
-  checksum: 8de4863716a94f2b607783e0d1ea3b2a2fdf3ae1864d11082959dff231578f0ff2532b660f7a40459cdf021caacb4edd0902874c2958ef07aa0ff30a98487a6b
-  languageName: node
-  linkType: hard
-
 "negotiator@npm:0.6.2":
   version: 0.6.2
   resolution: "negotiator@npm:0.6.2"
@@ -2150,26 +2107,6 @@ fsevents@~2.1.2:
   bin:
     node-gyp: bin/node-gyp.js
   checksum: 322c50640712e423c7f8b432bbd7bbb9441d09b542f3f2b8ed599e88473eeafbdc80f7e984f9c74229d9f33d1949f2af985a915ef72f6621c9d154b3e62fd71f
-  languageName: node
-  linkType: hard
-
-"node-pre-gyp@npm:0.12.0":
-  version: 0.12.0
-  resolution: "node-pre-gyp@npm:0.12.0"
-  dependencies:
-    detect-libc: ^1.0.2
-    mkdirp: ^0.5.1
-    needle: ^2.2.1
-    nopt: ^4.0.1
-    npm-packlist: ^1.1.6
-    npmlog: ^4.0.2
-    rc: ^1.2.7
-    rimraf: ^2.6.1
-    semver: ^5.3.0
-    tar: ^4
-  bin:
-    node-pre-gyp: ./bin/node-pre-gyp
-  checksum: 495135e3ac12bd6d0db17126486a84bfc864647b611219f7d53677659e8b772990afae32d041aeba171e856e8faf6a9414d39565bcecf6e0497ca86e0a929112
   languageName: node
   linkType: hard
 
@@ -2223,33 +2160,6 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"npm-bundled@npm:^1.0.1":
-  version: 1.1.1
-  resolution: "npm-bundled@npm:1.1.1"
-  dependencies:
-    npm-normalize-package-bin: ^1.0.1
-  checksum: d56777f0855e2bf477002fc2ce9c74b4e8b99d3f5786e846e9db0abe5d7c720362d2093442d837d5dc4fa9f092904e2c5e0391814a9cb0ff7bb9482a7a7d1eec
-  languageName: node
-  linkType: hard
-
-"npm-normalize-package-bin@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "npm-normalize-package-bin@npm:1.0.1"
-  checksum: 682a698dd2f5589792d21e86944163602357e1d70bf50863d08006e26415528e38c68c9548ab3f0dba119132c68386bd1721acb170ab3ac185593b02c3671253
-  languageName: node
-  linkType: hard
-
-"npm-packlist@npm:^1.1.6":
-  version: 1.4.8
-  resolution: "npm-packlist@npm:1.4.8"
-  dependencies:
-    ignore-walk: ^3.0.1
-    npm-bundled: ^1.0.1
-    npm-normalize-package-bin: ^1.0.1
-  checksum: 2ad40db6640a124aef3d4d8d3072a2f0d0d410b8cfb680ab4d23dd67e11d54699dfb6c4388a305848faae45187c035b7c07392e7ad0debb61bf4913a6edbee51
-  languageName: node
-  linkType: hard
-
 "npm-run-path@npm:^2.0.0":
   version: 2.0.2
   resolution: "npm-run-path@npm:2.0.2"
@@ -2259,7 +2169,7 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"npmlog@npm:^4.0.2, npmlog@npm:^4.1.2":
+"npmlog@npm:^4.1.2":
   version: 4.1.2
   resolution: "npmlog@npm:4.1.2"
   dependencies:
@@ -2606,7 +2516,7 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"rc@npm:^1.0.1, rc@npm:^1.1.6, rc@npm:^1.2.7":
+"rc@npm:^1.0.1, rc@npm:^1.1.6":
   version: 1.2.8
   resolution: "rc@npm:1.2.8"
   dependencies:
@@ -2734,7 +2644,7 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"rimraf@npm:^2.6.1, rimraf@npm:^2.6.3":
+"rimraf@npm:^2.6.3":
   version: 2.7.1
   resolution: "rimraf@npm:2.7.1"
   dependencies:
@@ -2775,13 +2685,6 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"sax@npm:^1.2.4":
-  version: 1.2.4
-  resolution: "sax@npm:1.2.4"
-  checksum: ca31df9cef3645a5a1d39ba2c946287261ef028bc89c06823685c700117bc60d7f02f01786d9f8566fb8620ce0f2d68263a8ae024104d2077c7489ce4b5fec26
-  languageName: node
-  linkType: hard
-
 "semver-diff@npm:^2.0.0":
   version: 2.1.0
   resolution: "semver-diff@npm:2.1.0"
@@ -2791,7 +2694,7 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"semver@npm:^5.0.3, semver@npm:^5.1.0, semver@npm:^5.3.0, semver@npm:^5.6.0, semver@npm:^5.7.1":
+"semver@npm:^5.0.3, semver@npm:^5.1.0, semver@npm:^5.6.0, semver@npm:^5.7.1":
   version: 5.7.1
   resolution: "semver@npm:5.7.1"
   bin:
@@ -2960,7 +2863,7 @@ fsevents@~2.1.2:
   resolution: "stem-portal-server@workspace:."
   dependencies:
     "@hapi/joi": ^17.1.0
-    bcrypt: 3.0.6
+    bcryptjs: ^2.4.3
     body-parser: ^1.19.0
     cors: ^2.8.5
     crypto: ^1.0.1
@@ -3057,7 +2960,7 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
-"tar@npm:^4, tar@npm:^4.4.12":
+"tar@npm:^4.4.12":
   version: 4.4.13
   resolution: "tar@npm:4.4.13"
   dependencies:
