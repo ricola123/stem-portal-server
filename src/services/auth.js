@@ -83,7 +83,7 @@ class AuthService {
     if (deleteOld) await Token.deleteOne({ _userId: userId });
     const token = new Token({ _userId: userId, token: crypto.randomBytes(16).toString('hex') });
     await token.save();
-    return token;
+    return token.token;
   }
 
   issueJsonWebToken (id, username, type) {

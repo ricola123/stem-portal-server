@@ -3,6 +3,8 @@ const Post = require('../models/posts');
 const TagService = require('../services/tag');
 const { ResponseError } = require('../utils');
 
+const mongoose = require('mongoose');
+
 class PostService {
 
     async getPosts (paginator) {
@@ -116,7 +118,13 @@ class PostService {
     }
 
     async createComment (_postId, author, content, replying) {
-        // timestamps
+      // timestamps
+      const post = await Post.findOne({ _id: _postId, 'comments._id': replying }, { comments: 0 });
+      if (!post) throw new ResponseError(404, 'post not found');
+
+      if(replying) {
+        
+      }
     }
 
     deleteInPlace(arr, condition, shouldBreak = true) {
