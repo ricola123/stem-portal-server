@@ -6,7 +6,7 @@ const ratingSchema = new Schema({
   _userId: {
     type: Schema.Types.ObjectId,
     required: true,
-    unique: true,
+    unique: false,
     ref: 'User'
   },
   score: {

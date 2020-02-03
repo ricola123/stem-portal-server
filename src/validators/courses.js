@@ -27,7 +27,7 @@ module.exports = {
       name: Joi.string().min(10).max(60).required(),
       description: Joi.string().required(),
       tags: Joi.array().min(1).max(5).required(),
-      chapters: Joi.string()
+      chapters: Joi.array().required()
     })
   },
   updateCourse: {
@@ -36,8 +36,11 @@ module.exports = {
       name: Joi.string().min(10).max(60).required(),
       description: Joi.string().required(),
       tags: Joi.array().min(1).max(5).required(),
-      chapters: Joi.string()
+      chapters: Joi.array().required()
     })
+  },
+  publishCourse: {
+    params: Joi.object({ id: Joi.objectId().required() })
   },
   deleteCourse: {
     params: Joi.object({ id: Joi.objectId().required() })

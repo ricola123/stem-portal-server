@@ -19,11 +19,10 @@ class CourseService {
         .sort(sort)
         .skip((size * page) - size)
         .limit(size)
-        .populate({ path: 'author', select: 'username email school firstName lastName' })
-        .select('name author tags rating'),
+        .populate('author', 'username')
+        .select('name author tags rating nRatings'),
       Course.countDocuments(query)
     ]);
-
     return { courses, page, pages: Math.ceil(count / size) || 1 };
   }
 
@@ -45,9 +44,7 @@ class CourseService {
       .lean();
     if (!course) throw new ResponseError(404, 'course not found');
 
-    course.title = course.name;
     course.chapters = JSON.parse(course.chapters);
-    delete course.name;
     return course;
   }
 
@@ -61,6 +58,15 @@ class CourseService {
       TagService.updateCourseTags(course._id, tags),
       course.save()
     ]);
+  }
+
+  async publishCourse (_id, publisher) {
+    const course = await Course.findById(_id);
+    if (!course) throw new ResponseError(404, 'course not found');
+    if (!publisher.id.equals(course.author)) throw new ResponseError(403, 'forbidden');
+
+    course.published = true;
+    await course.save();
   }
 
   async deleteCourse (_id, deletor) {
