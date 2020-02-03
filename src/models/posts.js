@@ -3,6 +3,11 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const commentSchema = new Schema({
+  _id: {
+    type: Schema.Types.ObjectId,
+    required: true,
+    unique: true
+  },
   author: {
     type: Schema.Types.ObjectId,
     required: true,
@@ -13,6 +18,11 @@ const commentSchema = new Schema({
     type: 'String',
     required: true,
     trim: true
+  },
+  replying: {
+    type: Schema.Types.ObjectId,
+    unique: false,
+    required: false
   },
   likes: [{
     type: Schema.Types.ObjectId,
@@ -32,6 +42,11 @@ const commentSchema = new Schema({
     default: 0
   },
   nDislikes: {
+    type: 'Number',
+    required: false,
+    default: 0
+  },
+  nReplies: {
     type: 'Number',
     required: false,
     default: 0

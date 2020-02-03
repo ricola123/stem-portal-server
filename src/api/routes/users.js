@@ -9,7 +9,7 @@ const schemas = require('../../validators/users');
 
 module.exports = router => {
   router.route('/user').get(authorize(), async (req, res) => {
-    const { id } = req.decoded;
+    const { id } = req.user;
     const user = await UserService.getUser(id);
     res.status(200).send({ status: 200, user });
   });
@@ -30,7 +30,7 @@ module.exports = router => {
     res.status(exists ? 204 : 404).send();
   });
   router.route('/users/:userId/update-password').post(authorize(), validate(schemas.updatePassword), async (req, res) => {
-    const { id } = req.decoded;
+    const { id } = req.user;
     if (id !== req.params.userId) throw new ResponseError(403, 'ambiguous target for update');
     const { password, newPassword } = req.body;
     await UserService.updatePassword(id, password, newPassword);

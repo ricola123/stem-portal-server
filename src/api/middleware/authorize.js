@@ -13,12 +13,14 @@ module.exports = (role = 'any') => {
         const user = jwt.verify(token, process.env.JWT_SECRET, options);
         if (role !== 'any' && role !== user.type) throw new ResponseError(403, 'forbidden');
         user.id = mongoose.Types.ObjectId(user.id); // convert string to user id
-        req.decoded = user;
+        req.user = user;
         next();
       } catch (err) {
+        if (role === 'optional') return next();
         throw err;
       }
     } else {
+      if (role === 'optional') return next();
       throw new ResponseError(401, 'authentication token required');
     }
   }

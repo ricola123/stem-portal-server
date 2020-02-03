@@ -18,7 +18,7 @@ module.exports = router => {
   });
   router.route('/courses').post(authorize('teacher'), validate(schemas.createCourse), async (req, res) => {
     const { name, description, tags, chapters } = req.body;
-    const author = req.decoded;
+    const author = req.user;
     const course = await CourseService.createCourse(name, author, description, tags, JSON.stringify(chapters));
     res.status(201).send({ status: 201, course });
   });
@@ -30,33 +30,33 @@ module.exports = router => {
   router.route('/courses/:id').put(authorize('teacher'), validate(schemas.updateCourse), async (req, res) => {
     const { id } = req.params;
     const { name, description, tags, chapters } = req.body;
-    const updator = req.decoded;
+    const updator = req.user;
     await CourseService.updateCourse(id, name, updator, description, tags, JSON.stringify(chapters));
     res.status(204).send();
   });
   router.route('/courses/:id').delete(authorize('teacher'), validate(schemas.deleteCourse), async (req, res) => {
     const { id } = req.params;
-    const deleter = req.decoded;
+    const deleter = req.user;
     await CourseService.deleteCourse(id, deleter);
     res.status(204).send();
   });
   router.route('/courses/:id/ratings').post(authorize(), validate(schemas.rateCourse), async (req, res) => {
     const { id } = req.params;
     const { score, comment } = req.body;
-    const rater = req.decoded;
+    const rater = req.user;
     await CourseService.rateCourse(id, rater.id, { score, comment });
     res.status(204).send();
   });
   router.route('/courses/:id/ratings').put(authorize(), validate(schemas.rateCourse), async (req, res) => {
     const { id } = req.params;
     const { score, comment } = req.body;
-    const rater = req.decoded;
+    const rater = req.user;
     await CourseService.rateCourse(id, rater.id, { score, comment }, true);
     res.status(204).send();
   });
   router.route('/courses/:id/ratings').delete(authorize(), async (req, res) => {
     const { id } = req.params;
-    const deleter = req.decoded;
+    const deleter = req.user;
     await CourseService.deleteRating(id, deleter.id);
     res.status(204).send();
   });
