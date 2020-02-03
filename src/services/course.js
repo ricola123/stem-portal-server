@@ -41,7 +41,7 @@ class CourseService {
   async getCourse (_id) {
     const course = await Course.findOne({ _id })
       .populate({ path: 'author', select: 'username email school firstName lastName' })
-      .select('-score -nRatings -published -__v')
+      .select('-score -nRatings -__v')
       .lean();
     if (!course) throw new ResponseError(404, 'course not found');
 
