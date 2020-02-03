@@ -18,7 +18,7 @@ module.exports = {
       lastName: Joi.string().max(20).pattern(/^([^0-9]*)$/).required(),
       gender: Joi.string().valid('male', 'female', 'others').required(),
       school: Joi.string().min(6).max(50).pattern(/^([^0-9]*)$/).required(),
-      interests: Joi.array().min(3).max(10).required()
+      interests: Joi.array().min(1).max(10).required()
     })
   },
   login: {
@@ -32,6 +32,14 @@ module.exports = {
     body: Joi.object({
       username: Joi.string().min(6).max(20).lowercase().trim().required(),
       email: Joi.string().email().required()
+    })
+  },
+  cancelToken: {
+    params: Joi.object({
+      token: Joi.string().length(32).required(),
+    }),
+    body: Joi.object({
+      username: Joi.string().min(6).max(20).lowercase().trim().required()
     })
   },
   resetPassword: {

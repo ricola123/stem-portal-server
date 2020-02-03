@@ -10,11 +10,11 @@ module.exports = router => {
     const { username } = req.params;
     const { token, cancel } = req.body;
     if (cancel) {
-      await AuthService.revokeRegisterToken(username, token);
+      await AuthService.revokeToken(username, token);
       res.status(200).send({ status: 200, message: 'cancelled' });
     } else {
-      await AuthService.verifyRegisterToken(username, token);
-      res.status(200).send({ status: 200, message: 'user verified' });
+      await AuthService.verifyToken(username, token);
+      res.status(200).send({ status: 200, message: 'verified token' });
     }
   });
   router.route('/auth/activate/:username').post(validate(schemas.activate), async (req, res) => {
@@ -32,6 +32,12 @@ module.exports = router => {
     const { username, email } = req.body;
     await AuthService.issueResetPasswordToken(username, email);
     res.status(204).send();
+  });
+  router.route('/suth/cancel-token/:token').post(validate(schemas.cancelToken), async (req, res) => {
+    const { token } = req.params;
+    const { username } = req.body;
+    await AuthService.revokeToken(username, token);
+    res.status(200).send({ status: 200, message: 'cancelled' });
   });
   router.route('/auth/reset-password').post(validate(schemas.resetPassword), async (req, res) => {
     const { username, password, token } = req.body;

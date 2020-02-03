@@ -34,6 +34,12 @@ module.exports = router => {
     await CourseService.updateCourse(id, name, updator, description, tags, JSON.stringify(chapters));
     res.status(204).send();
   });
+  router.route('/courses/:id').patch(authorize('teacher'), validate(schemas.publishCourse), async (req, res) => {
+    const { id } = req.params;
+    const publisher = req.user;
+    await CourseService.publishCourse(id, publisher);
+    res.status(204).send();
+  });
   router.route('/courses/:id').delete(authorize('teacher'), validate(schemas.deleteCourse), async (req, res) => {
     const { id } = req.params;
     const deleter = req.user;

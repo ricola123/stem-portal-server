@@ -25,14 +25,14 @@ class AuthService {
     return user;
   }
 
-  async revokeRegisterToken (username, token) {
+  async revokeToken (username, token) {
     const user = await User.findOne({ username });
     if (!user) throw new ResponseError(400, 'failed to revoke token for user: not found');
     if (user.type !== 'inactive') throw new ResponseError(400, 'account already activated');
     await Token.findOneAndDelete({ _userId: user._id, token });
   }
 
-  async verifyRegisterToken (username, token) {
+  async verifyToken (username, token) {
     const user = await User.findOne({ username });
     if (!user) throw new ResponseError(400, 'failed to verify token for user: not found');
     if (user.type !== 'inactive') throw new ResponseError(400, 'account already activated');
@@ -83,7 +83,7 @@ class AuthService {
     if (deleteOld) await Token.deleteOne({ _userId: userId });
     const token = new Token({ _userId: userId, token: crypto.randomBytes(16).toString('hex') });
     await token.save();
-    return token;
+    return token.token;
   }
 
   issueJsonWebToken (id, username, type) {
