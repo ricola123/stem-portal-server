@@ -11,7 +11,7 @@ module.exports = router => {
     const exists = await CourseService.checkIfExists(name);
     res.status(exists ? 204 : 404).send();
   });
-  router.route('/courses').get(validate(schemas.getCourses), paginate, async (req, res) => {
+  router.route('/courses').get(validate(schemas.getCourses), paginate('course'), async (req, res) => {
     const paginator = req.paginator;
     const { courses, page, pages } = await CourseService.getCourses(paginator, true);
     res.status(200).send({ status: 200, courses, page, pages });

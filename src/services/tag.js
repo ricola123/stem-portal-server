@@ -29,6 +29,33 @@ class TagService {
     await Tag.deleteMany({ references: 0 });
   }
 
+  async updatePostTags (_postId, tags) {
+    const currentTags = await Tag.find({ posts: _postId }).distinct('name');
+    const tagsToRemove = currentTags.filter(tag => !tags.includes(tag));
+    const saveTagOperations = tags
+      .filter(tag => !currentTags.includes(tag))
+      .map(tag => ({
+        updateOne: {
+          filter: { name: tag },
+          update: { $push: { posts: _postId }, $inc: { references: 1 } },
+          upsert: true
+        }
+      }));
+    const removeTagOperation = {
+      updateMany: {
+        filter: { name: { $in: tagsToRemove } },
+        update: { $pull: { posts: _postId }, $inc: { references: -1 } }
+      }
+    };
+    await Tag.bulkWrite([ ...saveTagOperations, removeTagOperation ]);
+    await Tag.deleteMany({ references: 0 });
+  }
+
+  async deRegisterPostTags (_postId) {
+    await Tag.updateMany({ posts: _postId }, { $pull: { posts: _postId } });
+    await Tag.deleteMany({ references: 0 });
+  }
+
   getTags () {
     return Tag.find().select('name references');
   }

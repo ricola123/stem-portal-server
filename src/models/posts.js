@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const commentSchema = new Schema({
-  author: [{
+  author: {
     type: Schema.Types.ObjectId,
     required: true,
     unique: false,
     ref: 'User'
-  }],
+  },
   content: {
     type: 'String',
     required: true,
@@ -28,11 +28,15 @@ const commentSchema = new Schema({
   }],
   nLikes: {
     type: 'Number',
+    required: false,
     default: 0
   },
   nDislikes: {
-    type: 'Number'
-  }
+    type: 'Number',
+    required: false,
+    default: 0
+  },
+  replies: [this]
 }, { timestamps: true });
 
 const postSchema = new Schema({
@@ -41,12 +45,12 @@ const postSchema = new Schema({
     required: true,
     trim: true,
   },
-  author: [{
+  author: {
     type: Schema.Types.ObjectId,
     required: true,
     unique: false,
     ref: 'User'
-  }],
+  },
   content: {
     type: 'String',
     required: true,
@@ -69,7 +73,27 @@ const postSchema = new Schema({
     required: false,
     ref: 'User'
   }],
-  comments: [commentSchema]
+  comments: [commentSchema],
+  rating: {
+    type: 'Number',
+    required: false,
+    default: 0
+  },
+  nLikes: {
+    type: 'Number',
+    required: false,
+    default: 0
+  },
+  nDislikes: {
+    type: 'Number',
+    required: false,
+    default: 0
+  },
+  nComments: {
+    type: 'Number',
+    required: false,
+    default: 0
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Post', postSchema);
