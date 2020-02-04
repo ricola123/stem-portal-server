@@ -43,8 +43,9 @@ module.exports = router => {
     });
     router.route('/forum/posts/:id/comments').get(validate(schemas.getComments), async (req, res) => {
         const _postId = req.params.id;
-        const comments = await PostService.getComments(_postId, req.query);
-        res.status(200).send({ status: 200, postId: _postId, comments });
+        const { reply, page = 1, size = 5 } = req.query;
+        const { comments, pages } = await PostService.getComments(_postId, reply, page, size);
+        res.status(200).send({ status: 200, comments, page, pages });
     });
     router.route('/forum/posts/:id/comments').post(authorize(), validate(schemas.createComment), async (req, res) => {
         const _postId = req.params.id;

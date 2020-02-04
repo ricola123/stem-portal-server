@@ -106,16 +106,28 @@ class PostService {
         await post.save();
     }
 
-    async getComments (_postId, { replying, page = 1, size = 5 }) {
-        const { comments } = await Post
-            .findOne(
-                { _id: _postId, 'comments.replying': replying },
-                { _id: 0, comments: { $slice: [ page * size - size, size ] } }
-            )
-            .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nReplies comments.updatedAt comments.createdAt')
-            .populate('comments.author', 'username')
-            .lean();
-        return comments;
+    async getComments (_postId, reply, page, size) {
+        const [comments, [{ count }]] = await Promise.all([
+            Post.aggregate([
+                { $match: { _id: mongoose.Types.ObjectId(_postId) } },
+                { $unwind: '$comments' },
+                { $match: reply ? { 'comments.replyTo': mongoose.Types.ObjectId(reply) } : {} },
+                { $replaceWith: '$comments' },
+                { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+                { $unwind: '$author' },
+                { $skip: (page - 1) * size },
+                { $limit: size },
+                { $project: { _id: 1, replyTo: 1, author: { _id: 1, username: 1 }, content: 1, nLikes: 1, nDislikes: 1, nReplies: 1, updatedAt: 1, createdAt: 1 } }
+            ]),
+            Post.aggregate([
+                { $match: { _id: mongoose.Types.ObjectId(_postId) } },
+                { $unwind: '$comments' },
+                { $match: reply ? { 'comments.replyTo': mongoose.Types.ObjectId(reply) } : {} },
+                { $replaceWith: '$comments' },
+                { $count: 'count' }
+            ])
+        ]);
+        return { comments, pages: Math.ceil(count / size) || 1 };
     }
 
     async createComment (_postId, author, content, replyTo) {
@@ -124,7 +136,7 @@ class PostService {
 
       const _commentId = mongoose.Types.ObjectId();
       post.comments.push({ _id: _commentId, author: author.id, content, replyTo });
-      const { _id, nLikes, nDislikes, nReplies, replies, createdAt } = post.comments[post.comments.length - 1];
+      const { _id, nLikes, nDislikes, nReplies, createdAt } = post.comments[post.comments.length - 1];
 
       if(replyTo) {
         const targetComment = post.comments.id(replyTo);
@@ -137,7 +149,9 @@ class PostService {
       return { _id, author: author.id, content, replyTo, nLikes, nDislikes, nReplies, createdAt };
     }
 
-    async 
+    async updateComment (_postId, _commentId, author, content) {
+        const post = await Post.findById(_postId)
+    }
 
     deleteInPlace(arr, condition, shouldBreak = true) {
         for (let i = 0; i < arr.length; i++) {
