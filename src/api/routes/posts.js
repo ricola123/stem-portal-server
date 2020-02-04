@@ -9,8 +9,8 @@ const schemas = require('../../validators/posts');
 module.exports = router => {
     router.route('/forum/posts').get(validate(schemas.getPosts), paginate('post'), async (req, res) => {
         const paginator = req.paginator;
-        const posts = await PostService.getPosts(paginator);
-        res.status(200).send({ status: 200, posts });
+        const { posts, page } = await PostService.getPosts(paginator);
+        res.status(200).send({ status: 200, posts, page });
     });
     router.route('/forum/posts').post(authorize(), validate(schemas.createPost), async (req, res) => {
         const author = req.user;
@@ -48,8 +48,16 @@ module.exports = router => {
     });
     router.route('/forum/posts/:id/comments').post(authorize(), validate(schemas.createComment), async (req, res) => {
         const _postId = req.params.id;
-        const { author, content, replying } = req.body;
-        const comment = await PostService.createComment(_postId, author, content, replying);
+        const author = req.user;
+        const { content, replyTo } = req.body;
+        const comment = await PostService.createComment(_postId, author, content, replyTo);
         res.status(201).send({ status: 201, comment });
+    });
+    router.route('/forum/posts/:pid/comments/:cid').patch(authorize(), validate(schemas.updateComment), async (req, res) => {
+      const { pid, cid } = req.params;
+      const updator = req.user;
+      const { content } = req.body;
+      await PostService.updateComment(pid, cid, author, content);
+      res.status(204).send();
     });
 };

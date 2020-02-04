@@ -16,7 +16,7 @@ class PostService {
             .limit(size)
             .populate('author', 'username')
             .lean();
-        return posts;
+        return { posts, page };
     }
 
     async getPost (_postId, user) {
@@ -112,19 +112,28 @@ class PostService {
                 { _id: 0, comments: { $slice: [ page * size - size, size ] } }
             )
             .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nReplies comments.createdAt')
-            .populate('comments.author', 'username email type school')
+            .populate('comments.author', 'username')
             .lean();
         return comments;
     }
 
-    async createComment (_postId, author, content, replying) {
-      // timestamps
-      const post = await Post.findOne({ _id: _postId, 'comments._id': replying }, { comments: 0 });
+    async createComment (_postId, author, content, replyTo) {
+      const post = await Post.findOne({ _id: _postId });
       if (!post) throw new ResponseError(404, 'post not found');
 
-      if(replying) {
-        
+      const _commentId = mongoose.Types.ObjectId();
+      post.comments.push({ _id: _commentId, author: author.id, content, replyTo });
+      const { _id, nLikes, nDislikes, nReplies, replies, createdAt } = post.comments[post.comments.length - 1];
+
+      if(replyTo) {
+        const targetComment = post.comments.id(replyTo);
+        targetComment.replies.push(_commentId);
+        targetComment.nReplies = targetComment.replies.length;
       }
+
+      post.nComments = post.comments.length;
+      await post.save();
+      return { _id, author: author.id, content, replyTo, nLikes, nDislikes, nReplies, createdAt };
     }
 
     deleteInPlace(arr, condition, shouldBreak = true) {

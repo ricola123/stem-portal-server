@@ -46,10 +46,16 @@ module.exports = {
     },
     createComment: {
         params: Joi.object({ id: Joi.objectId().required() }),
-        body: Joi.objectId({
-            author: Joi.objectId().required(),
+        body: Joi.object({
             content: Joi.string().required(),
-            replying: Joi.objectId()
+            replyTo: Joi.objectId()
         })
+    },
+    updateComment: {
+      params: Joi.object({
+        pid: Joi.objectId().required(),
+        cid: Joi.objectId().required()
+      }),
+      body: Joi.object({ content: Joi.string().required() })
     }
 };

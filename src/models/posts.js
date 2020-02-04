@@ -19,7 +19,7 @@ const commentSchema = new Schema({
     required: true,
     trim: true
   },
-  replying: {
+  replyTo: {
     type: Schema.Types.ObjectId,
     unique: false,
     required: false
