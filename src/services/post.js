@@ -22,7 +22,8 @@ class PostService {
     async getPost (_postId, user) {
         const post = await Post.findById(_postId, { comments: { $slice: 5 } })
             .populate('author', 'username type email school')
-            .select('-rating -nComments -__v')
+            .populate('comments.author', 'username')
+            .select('tags nLikes nDislikes author title content comments createdAt updatedAt')
             .lean();
 
         if (user && post.likes.includes(user.id)) post.liked = true;
@@ -111,7 +112,7 @@ class PostService {
                 { _id: _postId, 'comments.replying': replying },
                 { _id: 0, comments: { $slice: [ page * size - size, size ] } }
             )
-            .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nReplies comments.createdAt')
+            .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nReplies comments.updatedAt comments.createdAt')
             .populate('comments.author', 'username')
             .lean();
         return comments;
@@ -135,6 +136,8 @@ class PostService {
       await post.save();
       return { _id, author: author.id, content, replyTo, nLikes, nDislikes, nReplies, createdAt };
     }
+
+    async 
 
     deleteInPlace(arr, condition, shouldBreak = true) {
         for (let i = 0; i < arr.length; i++) {
