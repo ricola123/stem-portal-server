@@ -24,7 +24,7 @@ class PostService {
             .populate('author', 'username type email school')
             .populate('comments.author', 'username')
             .select('tags nLikes nDislikes author title content createdAt updatedAt')
-            .select('_id author content nLikes nDislikes nReplies updatedAt createdAt')
+            .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nReplies comments.updatedAt comments.createdAt')
             .lean();
 
         if (user && post.likes.includes(user.id)) post.liked = true;
