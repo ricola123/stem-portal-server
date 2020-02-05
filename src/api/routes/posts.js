@@ -45,7 +45,7 @@ module.exports = router => {
         const _postId = req.params.id;
         const { reply, page = 1, size = 10 } = req.query;
         const { comments, pages } = await PostService.getComments(_postId, reply, page, size);
-        res.status(200).send({ status: 200, comments, page, pages });
+        res.status(200).send({ status: 200, comments, page: parseInt(page), pages });
     });
     router.route('/forum/posts/:id/comments').post(authorize(), validate(schemas.createComment), async (req, res) => {
         const _postId = req.params.id;
@@ -55,10 +55,16 @@ module.exports = router => {
         res.status(201).send({ status: 201, comment });
     });
     router.route('/forum/posts/:pid/comments/:cid').patch(authorize(), validate(schemas.updateComment), async (req, res) => {
-      const { pid, cid } = req.params;
-      const updator = req.user;
-      const { content } = req.body;
-      await PostService.updateComment(pid, cid, author, content);
-      res.status(204).send();
+        const { pid, cid } = req.params;
+        const updator = req.user;
+        const { content } = req.body;
+        await PostService.updateComment(pid, cid, updator, content);
+        res.status(204).send();
+    });
+    router.route('/forum/posts/:pid/comments/:cid').delete(authorize(), validate(schemas.deleteComment), async (req, res) => {
+        const { pid, cid } = req.params;
+        const deletor = req.user;
+        await PostService.deleteComment(pid, cid, deletor);
+        res.status(204).send();
     });
 };

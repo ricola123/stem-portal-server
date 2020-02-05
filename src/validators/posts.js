@@ -52,10 +52,16 @@ module.exports = {
         })
     },
     updateComment: {
-      params: Joi.object({
-        pid: Joi.objectId().required(),
-        cid: Joi.objectId().required()
-      }),
-      body: Joi.object({ content: Joi.string().required() })
+        params: Joi.object({
+            pid: Joi.objectId().required(),
+            cid: Joi.objectId().required()
+        }),
+        body: Joi.object({ content: Joi.string().required() })
+    },
+    deleteComment: {
+        params: Joi.object({
+            pid: Joi.objectId().required(),
+            cid: Joi.objectId().required()
+        }),
     }
 };

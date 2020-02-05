@@ -132,28 +132,68 @@ class PostService {
     }
 
     async createComment (_postId, author, content, replyTo) {
-      const post = await Post.findOne({ _id: _postId });
-      if (!post) throw new ResponseError(404, 'post not found');
+        const post = await Post.findById(_postId);
+        if (!post) throw new ResponseError(404, 'post not found');
 
-      const _commentId = mongoose.Types.ObjectId();
-      post.comments.push({ _id: _commentId, author: author.id, content, replyTo });
-      const { _id, nLikes, nDislikes, nReplies, createdAt } = post.comments[post.comments.length - 1];
+        const _commentId = mongoose.Types.ObjectId();
+        post.comments.push({ _id: _commentId, author: author.id, content, replyTo });
+        const { _id, nLikes, nDislikes, nReplies, createdAt } = post.comments[post.comments.length - 1];
 
-      if(replyTo) {
-        const targetComment = post.comments.id(replyTo);
-        targetComment.replies.push(_commentId);
-        targetComment.nReplies = targetComment.replies.length;
-      }
+        if(replyTo) {
+            const targetComment = post.comments.id(replyTo);
+            targetComment.replies.push(_commentId);
+            targetComment.nReplies = targetComment.replies.length;
+        }
 
-      post.nComments = post.comments.length;
-      await post.save();
-      return { _id, author: author.id, content, replyTo, nLikes, nDislikes, nReplies, createdAt };
+        post.nComments = post.comments.length;
+        await post.save();
+        return { _id, author: author.id, content, replyTo, nLikes, nDislikes, nReplies, createdAt };
     }
 
-    async updateComment (_postId, _commentId, author, content) {
-        const post = await Post.findById(_postId)
+    async updateComment (_postId, _commentId, updator, content) {
+        const post = await Post.findById(_postId, { author: 1, content: 1, comments: 1 });
+        if (!post) throw new ResponseError(404, 'post not found');
+        if (!updator.id.equals(post.author)) throw new ResponseError(403, 'only the author can update this comment');
+        
+        const comment = post.comments.id(_commentId);
+        if (!comment) throw new ResponseError(404, 'comment not found');
+
+        if (comment.content === content) return;
+        await Post.updateOne(
+            { _id: _postId, 'comments._id': _commentId },
+            { $set: { 'comments.$.content': content } }
+        );
     }
 
+    async deleteComment (_postId, _commentId, deletor) {
+        const post = await Post.findById(_postId, { author: 1, comments: 1 });
+        if (!post) throw new ResponseError(404, 'post not found');
+        if (!deletor.id.equals(post.author)) throw new ResponseError(403, 'only author can delete this comment');
+
+        const comment = post.comments.id(_commentId);
+        if (!comment) throw new ResponseError(404, 'comment not found');
+        
+        const commentsToDel = [_commentId, ...comment.replies];
+        const operations = [
+            Post.updateOne({ _id: _postId }, {
+                $pull: { comments: { _id: { $in: commentsToDel } } },
+                $inc: { nComments: -1 * commentsToDel.length }
+            }),
+        ];
+        if (comment.replyTo) {
+            operations.push(
+                Post.updateOne({ _id: _postId }, {
+                    $pull: { 'comments.$[replied].replies': _commentId },
+                    $inc: { 'comments.$[replied].nReplies': -1 }
+                }, { arrayFilters: [{ 'replied._id': comment.replyTo }] })
+            );
+        }
+        await Promise.all(operations);
+        // todo: comments that reply to the replies of this deleted comment (those replying to any of comments.replies)
+        // are not deleted (could be solved by calling this function recursively) but would have bad response times
+        // need to think of a better way
+    }
+    
     deleteInPlace(arr, condition, shouldBreak = true) {
         for (let i = 0; i < arr.length; i++) {
             if (arr[i].equals(condition)) {
