@@ -16,8 +16,8 @@ module.exports = router => {
   router.route('/users').post(validate(schemas.register), async (req, res) => {
     const { username, password, email, resend } = req.body;
     if (resend) {
-      const user = await AuthService.resendRegisterToken(username, email);
-      res.status(200).send({ status: 200, user });
+      await AuthService.resendRegisterToken(username, email);
+      res.status(204).send();
     } else {
       const user = await UserService.createUser(username, password, email);
       await AuthService.sendRegisterToken(user._id, username, email);

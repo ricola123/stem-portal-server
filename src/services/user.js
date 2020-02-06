@@ -12,8 +12,8 @@ class UserService {
     return exists;
   }
   
-  async getUser (userId) {
-    const user = await User.findById(userId).select('-password -__v');
+  async getUser (_userId) {
+    const user = await User.findById(_userId).select('-password -__v');
     if (!user) throw new ResponseError(404, 'user not found');
     return user;
   }
@@ -21,10 +21,10 @@ class UserService {
   async createUser (username, password, email) {
     let user = await User.findOne({ $or: [{ username }, { email }] });
     if (user) throw new ResponseError(400, 'an existing user has a same username or email address');
-
+     
     user = new User({ username, password, email, type: 'inactive' });
-    user = await user.save();
-    return user;
+    await user.save();
+    return await User.findById(user._id).select('-__v -password');
   }
 
   async updatePassword (userId, curPassword, newPassword) {
