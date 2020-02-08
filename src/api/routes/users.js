@@ -31,7 +31,6 @@ module.exports = router => {
   });
   router.route('/users/:userId/update-password').post(authorize(), validate(schemas.updatePassword), async (req, res) => {
     const { id } = req.user;
-    if (id !== req.params.userId) throw new ResponseError(403, 'ambiguous target for update');
     const { password, newPassword } = req.body;
     await UserService.updatePassword(id, password, newPassword);
     res.status(204).send();

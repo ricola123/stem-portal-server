@@ -32,7 +32,7 @@ class UserService {
     if (!user) throw new ResponseError(400, 'user not found');
 
     const match = await AuthService.comparePassword(curPassword, user.password);  
-    if (!match) throw new ResponseError(400, 'cannot update password: wrong current password');
+    if (!match) throw new ResponseError(403, 'cannot update password: wrong current password');
 
     user.password = await AuthService.hashPassword(newPassword);
     await user.save();

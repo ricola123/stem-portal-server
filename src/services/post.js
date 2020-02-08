@@ -4,6 +4,7 @@ const TagService = require('../services/tag');
 const { ResponseError } = require('../utils');
 
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
 class PostService {
 
@@ -19,8 +20,8 @@ class PostService {
         return { posts, page };
     }
 
-    async getPost (_postId, user) {
-        const post = await Post.findById(_postId, { comments: { $slice: 10 } })
+    async getPost (_postId, user, nComments) {
+        const post = await Post.findById(_postId, { comments: { $slice: nComments } })
             .populate('author', 'username type email school')
             .populate('comments.author', 'username')
             .select('tags nLikes nDislikes author title content createdAt updatedAt')
@@ -108,93 +109,128 @@ class PostService {
     }
 
     async getComments (_postId, reply, page, size) {
+        const baseStages = this.getCommentsAggrStages(_postId, reply, page, size);
         const [comments, [{ count }]] = await Promise.all([
-            Post.aggregate([
-                { $match: { _id: mongoose.Types.ObjectId(_postId) } },
-                { $unwind: '$comments' },
-                { $match: reply ? { 'comments.replyTo': mongoose.Types.ObjectId(reply) } : {} },
-                { $replaceWith: '$comments' },
+            Post.aggregate(reply ? [
+                ...baseStages,
                 { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
                 { $unwind: '$author' },
-                { $skip: (page - 1) * size },
-                { $limit: size },
-                { $project: { _id: 1, replyTo: 1, author: { _id: 1, username: 1 }, content: 1, nLikes: 1, nDislikes: 1, nReplies: 1, updatedAt: 1, createdAt: 1 } }
+                { $project: { author: { _id: 1, username: 1 }, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
+            ] : [
+                ...baseStages,
+                { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+                { $unwind: '$author' },
+                { $lookup: { from: 'posts', localField: 'parent', foreignField: 'comments._id', as: 'post' } },
+                { $set: { _parentId: '$parent' } },
+                { $set: { parent: '$post' } },
+                { $project: { parent: { comments: { _id: 1, content: 1 } }, author: { _id: 1, username: 1 }, _parentId: 1, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } },
+                { $unwind: { path: '$parent', preserveNullAndEmptyArrays: true } },
+                { $unwind: { path: '$parent.comments', preserveNullAndEmptyArrays: true } },
+                { $match: { $expr: { $eq: [ '$parent.comments._id', '$_parentId' ] } } },
+                { $project: { parent: { _id: '$_parentId', content: '$parent.comments.content' }, author: { _id: 1, username: 1 }, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
             ]),
-            Post.aggregate([
-                { $match: { _id: mongoose.Types.ObjectId(_postId) } },
-                { $unwind: '$comments' },
-                { $match: reply ? { 'comments.replyTo': mongoose.Types.ObjectId(reply) } : {} },
-                { $replaceWith: '$comments' },
-                { $count: 'count' }
-            ])
+            Post.aggregate([ ...baseStages, { $count: 'count' } ])
         ]);
+        comments.forEach(c => { if (_.isEmpty(c.parent)) delete c.parent } );
         return { comments, pages: Math.ceil(count / size) || 1 };
     }
 
-    async createComment (_postId, author, content, replyTo) {
-        const post = await Post.findById(_postId);
+    async createComment (_postId, author, content, _parentId) {
+        const post = await Post.findById(_postId).select('comments');
         if (!post) throw new ResponseError(404, 'post not found');
 
-        const _commentId = mongoose.Types.ObjectId();
-        post.comments.push({ _id: _commentId, author: author.id, content, replyTo });
-        const { _id, nLikes, nDislikes, nReplies, createdAt } = post.comments[post.comments.length - 1];
-
-        if(replyTo) {
-            const targetComment = post.comments.id(replyTo);
-            targetComment.replies.push(_commentId);
-            targetComment.nReplies = targetComment.replies.length;
+        if (_parentId) {
+            const parent = post.comments.id(_parentId);
+            if (!parent) throw new ResponseError(404, 'reply target not found');
+            if (parent.parent) _parentId = parent.parent;
         }
 
-        post.nComments = post.comments.length;
-        await post.save();
-        return { _id, author: author.id, content, replyTo, nLikes, nDislikes, nReplies, createdAt };
+        const _commentId = mongoose.Types.ObjectId();
+        const comment = { _id: _commentId, author: author.id, parent: _parentId, content };
+
+        const postComment = () => Post.updateOne({ _id: _postId }, { 
+            $push: { comments: comment },
+            $inc: { nComments: 1 }
+        });
+        const updateParent = () => Post.updateOne({ _id: _postId, 'comments._id': _parentId }, {
+            $push: { 'comments.$.comments': mongoose.Types.ObjectId(_commentId) },
+            $inc: { 'comments.$.nComments': 1 }
+        });
+
+        const result = await (_parentId ? Promise.all([postComment(), updateParent()]) : postComment());
+        const success = result.nModified || Array.isArray(result) && result.every(r => !!r.nModified);
+        if (!success) throw new ResponseError(400, 'failed to create comment');
+
+        return (await Post.aggregate([
+            ...this.getCommentsAggrStages(_postId),
+            { $match: { _id: mongoose.Types.ObjectId(_commentId) } },
+            { $project: { author: 1, content: 1, parent: 1, nLikes: 1, nDislikes: 1, nComments: 1 } }
+        ]))[0]; //Aggregation returns an array
     }
 
     async updateComment (_postId, _commentId, updator, content) {
-        const post = await Post.findById(_postId, { author: 1, content: 1, comments: 1 });
+        const post = await Post.findById(_postId, { comments: 1 });
         if (!post) throw new ResponseError(404, 'post not found');
-        if (!updator.id.equals(post.author)) throw new ResponseError(403, 'only the author can update this comment');
-        
+
+
         const comment = post.comments.id(_commentId);
         if (!comment) throw new ResponseError(404, 'comment not found');
-
+        if (!updator.id.equals(comment.author)) throw new ResponseError(403, 'only the author can update this comment');
         if (comment.content === content) return;
-        await Post.updateOne(
-            { _id: _postId, 'comments._id': _commentId },
-            { $set: { 'comments.$.content': content } }
-        );
+
+        await Post.updateOne({ _id: _postId, 'comments._id': _commentId }, {
+            $set: { 'comments.$.content': content }
+        });
     }
 
     async deleteComment (_postId, _commentId, deletor) {
-        const post = await Post.findById(_postId, { author: 1, comments: 1 });
+        const post = await Post.findById(_postId, { comments: 1 });
         if (!post) throw new ResponseError(404, 'post not found');
-        if (!deletor.id.equals(post.author)) throw new ResponseError(403, 'only author can delete this comment');
 
         const comment = post.comments.id(_commentId);
         if (!comment) throw new ResponseError(404, 'comment not found');
+        if (!deletor.id.equals(comment.author)) throw new ResponseError(403, 'only the author can delete this comment');
         
-        const commentsToDel = [_commentId, ...comment.replies];
-        const operations = [
-            Post.updateOne({ _id: _postId }, {
-                $pull: { comments: { _id: { $in: commentsToDel } } },
-                $inc: { nComments: -1 * commentsToDel.length }
-            }),
-        ];
-        if (comment.replyTo) {
-            operations.push(
-                Post.updateOne({ _id: _postId }, {
-                    $pull: { 'comments.$[replied].replies': _commentId },
-                    $inc: { 'comments.$[replied].nReplies': -1 }
-                }, { arrayFilters: [{ 'replied._id': comment.replyTo }] })
-            );
-        }
-        await Promise.all(operations);
-        // todo: comments that reply to the replies of this deleted comment (those replying to any of comments.replies)
-        // are not deleted (could be solved by calling this function recursively) but would have bad response times
-        // need to think of a better way
+        const deleteComment = () => Post.updateOne({ _id: _postId }, {
+            $pull: { comments: { _id: _commentId } },
+            $inc: { nComments: -1 }
+        });
+        const updateParent = () => Post.updateOne({ _id: _postId, 'comments._id': comment.parent }, {
+            $pull: { 'comments.$.comments': _commentId },
+            $inc: { 'comments.$.nComments': -1 }
+        });
+        await (comment.parent ? Promise.all([deleteComment(), updateParent()]) : deleteComment());
     }
     
-    deleteInPlace(arr, condition, shouldBreak = true) {
+    getCommentsAggrStages (_postId, reply, page, size) {
+        const pre = [
+            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
+            { $project: { comments: 1 } },
+            { $unwind: '$comments' }
+        ];
+        if (reply) pre.push({ $match: { 'comments.parent': mongoose.Types.ObjectId(reply) } });
+        const post = !!page && !!size ? [
+            { $skip: (page - 1) * size },
+            { $limit: size }
+        ] : [];
+        return [ ...pre, { $replaceWith: '$comments' }, ...post ];
+    }
+
+    findComment (comments, _commentId) {
+        for (let i = 0; i < comments.length; i++) {
+            const comment = comments[i];
+            if (comment._id.equals(_commentId)) return { comment };
+            if (comment.nComments) {
+                for (let j = 0; j < comment.comments.length; j++) {
+                    if (comment.comments[j]._id.equals(_commentId)) {
+                        return { comment: comment.comments[j], parent: comment._id };
+                    }
+                }
+            }
+        }
+    }
+
+    deleteInPlace (arr, condition, shouldBreak = true) {
         for (let i = 0; i < arr.length; i++) {
             if (arr[i].equals(condition)) {
                 arr.splice(i, 1);
