@@ -18,9 +18,10 @@ module.exports = router => {
         const post = await PostService.createPost(author, title, content, tags);
         res.status(201).send({ status: 201, post });
     });
-    router.route('/forum/posts/:id').get(authorize('optional'), async (req, res) => {
+    router.route('/forum/posts/:id').get(authorize('optional'), validate(schemas.getPost), async (req, res) => {
         const _postId = req.params.id;
-        const post = await PostService.getPost(_postId, req.decoded);
+        const nComments = req.query.size || 10;
+        const post = await PostService.getPost(_postId, req.decoded, nComments);
         res.status(200).send({ status: 200, post });
     });
     router.route('/forum/posts/:id').patch(authorize(), validate(schemas.updatePost), async (req, res) => {
@@ -50,8 +51,8 @@ module.exports = router => {
     router.route('/forum/posts/:id/comments').post(authorize(), validate(schemas.createComment), async (req, res) => {
         const _postId = req.params.id;
         const author = req.user;
-        const { content, replyTo } = req.body;
-        const comment = await PostService.createComment(_postId, author, content, replyTo);
+        const { content, reply } = req.body;
+        const comment = await PostService.createComment(_postId, author, content, reply);
         res.status(201).send({ status: 201, comment });
     });
     router.route('/forum/posts/:pid/comments/:cid').patch(authorize(), validate(schemas.updateComment), async (req, res) => {

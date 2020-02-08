@@ -5,12 +5,15 @@ const { ResponseError } = require('../utils');
 module.exports = {
     getPosts: {
         query: Joi.object({
-            search: Joi.string().min(3),
+            search: Joi.string().min(3).max(26),
             tags: Joi.string(),
             sort: Joi.string().valid('latest', 'rating', 'popular'),
             page: Joi.number().min(1),
-            size: Joi.number().min(1).max(20)
+            size: Joi.number().min(5).max(20)
         })
+    },
+    getPost: {
+        params: Joi.object({ id: Joi.objectId().required() })
     },
     createPost: {
         body: Joi.object({
@@ -48,7 +51,7 @@ module.exports = {
         params: Joi.object({ id: Joi.objectId().required() }),
         body: Joi.object({
             content: Joi.string().required(),
-            replyTo: Joi.objectId()
+            reply: Joi.objectId()
         })
     },
     updateComment: {
