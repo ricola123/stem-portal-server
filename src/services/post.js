@@ -24,8 +24,8 @@ class PostService {
         const post = await Post.findById(_postId, { comments: { $slice: nComments } })
             .populate('author', 'username type email school')
             .populate('comments.author', 'username')
-            .select('tags nLikes nDislikes author title content createdAt updatedAt')
-            .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nReplies comments.updatedAt comments.createdAt')
+            .select('tags nLikes nDislikes author title content createdAt updatedAt nComments')
+            .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nComments comments.updatedAt comments.createdAt')
             .lean();
 
         if (user && post.likes.includes(user.id)) post.liked = true;
