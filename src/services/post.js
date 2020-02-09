@@ -20,8 +20,8 @@ class PostService {
         return { posts, page };
     }
 
-    async getPost (_postId, user, nComments) {
-        const post = await Post.findById(_postId, { comments: { $slice: nComments } })
+    async getPost (_postId, user, size) {
+        const post = await Post.findById(_postId, { comments: { $slice: size } })
             .populate('author', 'username type email school')
             .populate('comments.author', 'username')
             .select('tags nLikes nDislikes author title content createdAt updatedAt nComments')
@@ -33,7 +33,7 @@ class PostService {
         
         delete post.likes;
         delete post.dislikes;
-        return post;
+        return { post, pages: Math.ceil(post.nComments / size) || 1 };
     }
 
     async createPost (author, title, content, tags) {
