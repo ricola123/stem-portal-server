@@ -216,20 +216,6 @@ class PostService {
         return [ ...pre, { $replaceWith: '$comments' }, ...post ];
     }
 
-    findComment (comments, _commentId) {
-        for (let i = 0; i < comments.length; i++) {
-            const comment = comments[i];
-            if (comment._id.equals(_commentId)) return { comment };
-            if (comment.nComments) {
-                for (let j = 0; j < comment.comments.length; j++) {
-                    if (comment.comments[j]._id.equals(_commentId)) {
-                        return { comment: comment.comments[j], parent: comment._id };
-                    }
-                }
-            }
-        }
-    }
-
     deleteInPlace (arr, condition, shouldBreak = true) {
         for (let i = 0; i < arr.length; i++) {
             if (arr[i].equals(condition)) {
