@@ -5,12 +5,15 @@ const { ResponseError } = require('../utils');
 module.exports = {
     getPosts: {
         query: Joi.object({
-            search: Joi.string().min(3),
+            search: Joi.string().min(3).max(26),
             tags: Joi.string(),
             sort: Joi.string().valid('latest', 'rating', 'popular'),
             page: Joi.number().min(1),
-            size: Joi.number().min(1).max(20)
+            size: Joi.number().min(5).max(20)
         })
+    },
+    getPost: {
+        params: Joi.object({ id: Joi.objectId().required() })
     },
     createPost: {
         body: Joi.object({
@@ -39,17 +42,29 @@ module.exports = {
     getComments: {
         params: Joi.object({ id: Joi.objectId().required() }),
         query: Joi.object({
-            replying: Joi.objectId(),
+            reply: Joi.objectId(),
             page: Joi.number().min(1),
             size: Joi.number().min(5).max(20)
         })
     },
     createComment: {
         params: Joi.object({ id: Joi.objectId().required() }),
-        body: Joi.objectId({
-            author: Joi.objectId().required(),
+        body: Joi.object({
             content: Joi.string().required(),
-            replying: Joi.objectId()
+            reply: Joi.objectId()
         })
+    },
+    updateComment: {
+        params: Joi.object({
+            pid: Joi.objectId().required(),
+            cid: Joi.objectId().required()
+        }),
+        body: Joi.object({ content: Joi.string().required() })
+    },
+    deleteComment: {
+        params: Joi.object({
+            pid: Joi.objectId().required(),
+            cid: Joi.objectId().required()
+        }),
     }
 };

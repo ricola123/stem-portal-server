@@ -12,8 +12,8 @@ class UserService {
     return exists;
   }
   
-  async getUser (userId) {
-    const user = await User.findById(userId).select('-password -__v');
+  async getUser (_userId) {
+    const user = await User.findById(_userId).select('-password -__v');
     if (!user) throw new ResponseError(404, 'user not found');
     return user;
   }
@@ -23,8 +23,8 @@ class UserService {
     if (user) throw new ResponseError(400, 'an existing user has a same username or email address');
 
     user = new User({ username, password, email, type: 'inactive', courses: { inProgress: [], finished: [] } });
-    user = await user.save();
-    return user;
+    await user.save();
+    return await User.findById(user._id).select('-__v -password');
   }
 
   async updatePassword (userId, curPassword, newPassword) {
@@ -32,7 +32,7 @@ class UserService {
     if (!user) throw new ResponseError(400, 'user not found');
 
     const match = await AuthService.comparePassword(curPassword, user.password);  
-    if (!match) throw new ResponseError(400, 'cannot update password: wrong current password');
+    if (!match) throw new ResponseError(403, 'cannot update password: wrong current password');
 
     user.password = await AuthService.hashPassword(newPassword);
     await user.save();

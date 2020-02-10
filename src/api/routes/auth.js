@@ -33,7 +33,7 @@ module.exports = router => {
     await AuthService.issueResetPasswordToken(username, email);
     res.status(204).send();
   });
-  router.route('/suth/cancel-token/:token').post(validate(schemas.cancelToken), async (req, res) => {
+  router.route('/auth/cancel-token/:token').post(validate(schemas.cancelToken), async (req, res) => {
     const { token } = req.params;
     const { username } = req.body;
     await AuthService.revokeToken(username, token);

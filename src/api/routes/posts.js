@@ -9,8 +9,8 @@ const schemas = require('../../validators/posts');
 module.exports = router => {
     router.route('/forum/posts').get(validate(schemas.getPosts), paginate('post'), async (req, res) => {
         const paginator = req.paginator;
-        const posts = await PostService.getPosts(paginator);
-        res.status(200).send({ status: 200, posts });
+        const { posts, page } = await PostService.getPosts(paginator);
+        res.status(200).send({ status: 200, posts, page });
     });
     router.route('/forum/posts').post(authorize(), validate(schemas.createPost), async (req, res) => {
         const author = req.user;
@@ -18,10 +18,10 @@ module.exports = router => {
         const post = await PostService.createPost(author, title, content, tags);
         res.status(201).send({ status: 201, post });
     });
-    router.route('/forum/posts/:id').get(authorize('optional'), async (req, res) => {
+    router.route('/forum/posts/:id').get(authorize('optional'), validate(schemas.getPost), async (req, res) => {
         const _postId = req.params.id;
-        const post = await PostService.getPost(_postId, req.decoded);
-        res.status(200).send({ status: 200, post });
+        const { post, pages } = await PostService.getPost(_postId, req.decoded, req.query.size || 10);
+        res.status(200).send({ status: 200, post, pages });
     });
     router.route('/forum/posts/:id').patch(authorize(), validate(schemas.updatePost), async (req, res) => {
         const updator = req.user;
@@ -43,13 +43,28 @@ module.exports = router => {
     });
     router.route('/forum/posts/:id/comments').get(validate(schemas.getComments), async (req, res) => {
         const _postId = req.params.id;
-        const comments = await PostService.getComments(_postId, req.query);
-        res.status(200).send({ status: 200, postId: _postId, comments });
+        const { reply, page = 1, size = 10 } = req.query;
+        const { comments, pages } = await PostService.getComments(_postId, reply, page, size);
+        res.status(200).send({ status: 200, comments, page: parseInt(page), pages });
     });
     router.route('/forum/posts/:id/comments').post(authorize(), validate(schemas.createComment), async (req, res) => {
         const _postId = req.params.id;
-        const { author, content, replying } = req.body;
-        const comment = await PostService.createComment(_postId, author, content, replying);
+        const author = req.user;
+        const { content, reply } = req.body;
+        const comment = await PostService.createComment(_postId, author, content, reply);
         res.status(201).send({ status: 201, comment });
+    });
+    router.route('/forum/posts/:pid/comments/:cid').patch(authorize(), validate(schemas.updateComment), async (req, res) => {
+        const { pid, cid } = req.params;
+        const updator = req.user;
+        const { content } = req.body;
+        await PostService.updateComment(pid, cid, updator, content);
+        res.status(204).send();
+    });
+    router.route('/forum/posts/:pid/comments/:cid').delete(authorize(), validate(schemas.deleteComment), async (req, res) => {
+        const { pid, cid } = req.params;
+        const deletor = req.user;
+        await PostService.deleteComment(pid, cid, deletor);
+        res.status(204).send();
     });
 };

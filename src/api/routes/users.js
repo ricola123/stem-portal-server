@@ -16,8 +16,8 @@ module.exports = router => {
   router.route('/users').post(validate(schemas.register), async (req, res) => {
     const { username, password, email, resend } = req.body;
     if (resend) {
-      const user = await AuthService.resendRegisterToken(username, email);
-      res.status(200).send({ status: 200, user });
+      await AuthService.resendRegisterToken(username, email);
+      res.status(204).send();
     } else {
       const user = await UserService.createUser(username, password, email);
       await AuthService.sendRegisterToken(user._id, username, email);
@@ -31,7 +31,6 @@ module.exports = router => {
   });
   router.route('/users/:userId/update-password').post(authorize(), validate(schemas.updatePassword), async (req, res) => {
     const { id } = req.user;
-    if (id !== req.params.userId) throw new ResponseError(403, 'ambiguous target for update');
     const { password, newPassword } = req.body;
     await UserService.updatePassword(id, password, newPassword);
     res.status(204).send();

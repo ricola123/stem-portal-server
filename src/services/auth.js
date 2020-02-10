@@ -17,25 +17,24 @@ class AuthService {
 
   async resendRegisterToken (username, email) {
     const user = await User.findOne({ username, email });
-    if (!user) throw new ResponseError(400, 'failed to resend link to user: not found');
-    if (user.type !== 'inactive') throw new ResponseError(400, 'account already activated');
+    if (!user) throw new ResponseError(400, 'failed to resend email: user not found');
+    if (user.type !== 'inactive') throw new ResponseError(400, 'account already verified');
 
     const { token } = await this.issueVerifyToken(user._id, true);
     await EmailService.sendVerifyRegisterEmail(email, username, token);
-    return user;
   }
 
   async revokeToken (username, token) {
     const user = await User.findOne({ username });
-    if (!user) throw new ResponseError(400, 'failed to revoke token for user: not found');
-    if (user.type !== 'inactive') throw new ResponseError(400, 'account already activated');
+    if (!user) throw new ResponseError(400, 'failed to revoke token: user not found');
+    if (user.type !== 'inactive') throw new ResponseError(400, 'account already verified');
     await Token.findOneAndDelete({ _userId: user._id, token });
   }
 
   async verifyToken (username, token) {
     const user = await User.findOne({ username });
-    if (!user) throw new ResponseError(400, 'failed to verify token for user: not found');
-    if (user.type !== 'inactive') throw new ResponseError(400, 'account already activated');
+    if (!user) throw new ResponseError(400, 'failed to verify token: user not found');
+    if (user.type !== 'inactive') throw new ResponseError(400, 'account already verified');
 
     const targetToken = await Token.findOne({ _userId: user._id, token });
     if (!targetToken) throw new ResponseError(400, 'invalid or expired token');
