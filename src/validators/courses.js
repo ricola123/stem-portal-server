@@ -42,6 +42,9 @@ module.exports = {
   publishCourse: {
     params: Joi.object({ id: Joi.objectId().required() })
   },
+  unpublishCourse: {
+    params: Joi.object({ id: Joi.objectId().required() })
+  },
   deleteCourse: {
     params: Joi.object({ id: Joi.objectId().required() })
   },
