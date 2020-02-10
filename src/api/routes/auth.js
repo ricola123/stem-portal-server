@@ -1,7 +1,5 @@
 const validate = require('../middleware/validate');
 
-const { ResponseError } = require('../../utils');
-
 const AuthService = require('../../services/auth');
 const schemas = require('../../validators/auth');
 
