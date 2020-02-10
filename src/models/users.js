@@ -15,7 +15,7 @@ const myCourseSchema = new Schema({
     unique: false,
     ref: 'Course'
   }]
-});
+}, { _id: false });
 
 const userSchema = new Schema({
   username: {

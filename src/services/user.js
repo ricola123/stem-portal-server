@@ -21,8 +21,8 @@ class UserService {
   async createUser (username, password, email) {
     let user = await User.findOne({ $or: [{ username }, { email }] });
     if (user) throw new ResponseError(400, 'an existing user has a same username or email address');
-     
-    user = new User({ username, password, email, type: 'inactive' });
+
+    user = new User({ username, password, email, type: 'inactive', courses: { inProgress: [], finished: [] } });
     await user.save();
     return await User.findById(user._id).select('-__v -password');
   }

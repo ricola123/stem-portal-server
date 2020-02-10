@@ -69,6 +69,15 @@ class CourseService {
     await course.save();
   }
 
+  async unpublishCourse (_id, unpublisher) {
+    const course = await Course.findById(_id);
+    if (!course) throw new ResponseError(404, 'course not found');
+    if (!unpublisher.id.equals(course.author)) throw new ResponseError(403, 'forbidden');
+
+    course.published = false;
+    await course.save();
+  }
+
   async deleteCourse (_id, deletor) {
     const course = await Course.findById(_id);
     if (!course) throw new ResponseError(404, 'course not found');

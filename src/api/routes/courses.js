@@ -34,10 +34,16 @@ module.exports = router => {
     await CourseService.updateCourse(id, name, updator, description, tags, JSON.stringify(chapters));
     res.status(204).send();
   });
-  router.route('/courses/:id').patch(authorize('teacher'), validate(schemas.publishCourse), async (req, res) => {
+  router.route('/courses/:id/publish').post(authorize('teacher'), validate(schemas.publishCourse), async (req, res) => {
     const { id } = req.params;
     const publisher = req.user;
     await CourseService.publishCourse(id, publisher);
+    res.status(204).send();
+  });
+  router.route('/courses/:id/unpublish').post(authorize('teacher'), validate(schemas.unpublishCourse), async (req, res) => {
+    const { id } = req.params;
+    const unpublisher = req.user;
+    await CourseService.unpublishCourse(id, unpublisher);
     res.status(204).send();
   });
   router.route('/courses/:id').delete(authorize('teacher'), validate(schemas.deleteCourse), async (req, res) => {
