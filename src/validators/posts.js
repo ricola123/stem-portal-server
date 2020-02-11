@@ -42,7 +42,7 @@ module.exports = {
     getComments: {
         params: Joi.object({ id: Joi.objectId().required() }),
         query: Joi.object({
-            floor: Joi.number().min(2),
+            reply: Joi.objectId(),
             page: Joi.number().min(1),
             size: Joi.number().min(5).max(20)
         })

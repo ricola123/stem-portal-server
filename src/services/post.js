@@ -108,33 +108,14 @@ class PostService {
         await post.save();
     }
 
-    async getComments (_postId, floor, page, size) {
+    async getComments (_postId, _replyId, page, size) {
         const [comments, [{ count }]] = await Promise.all([
-            Post.aggregate(reply ? [
-                ...this.getCommentsAggrStages(_postId, floor),
-                { $skip: (page - 1) * size },
-                { $limit: size },
-                { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
-                { $unwind: '$author' },
-                { $project: { author: { _id: 1, username: 1 }, content: 1, floor: { $add: [ '$floor', 2 ] }, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
-            ] : [
-                ...this.getCommentsAggrStages(_postId, undefined, page, size),
-                { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
-                { $unwind: '$author' },
-                { $lookup: { from: 'posts', localField: 'parent', foreignField: 'comments._id', as: 'post' } },
-                { $set: { _parentId: '$parent' } },
-                { $set: { parent: '$post' } },
-                { $project: { parent: { comments: { _id: 1, content: 1 } }, author: { _id: 1, username: 1 }, _parentId: 1, content: 1, floor: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } },
-                { $unwind: { path: '$parent', preserveNullAndEmptyArrays: true } },
-                { $unwind: { path: '$parent.comments', preserveNullAndEmptyArrays: true } },
-                { $match: { $expr: { $eq: [ '$parent.comments._id', '$_parentId' ] } } },
-                { $project: { parent: { _id: '$_parentId', content: '$parent.comments.content' }, author: { _id: 1, username: 1 }, content: 1, floor: { $add: [ '$floor', 2 ] }, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
-            ]),
-            Post.aggregate(this.getCountCommentAggrStages(_postId, floor - 2))
+            Post.aggregate(this.getCommentStages(_postId, _replyId, page, size)),
+            Post.aggregate(this.getCountCommentStages(_postId, _replyId))
         ]);
         comments.forEach(c => { if (_.isEmpty(c.parent)) delete c.parent } );
         return { 
-            page: page || Math.max(floor - 2 - 5, 0), 
+            page: parseInt(page) || 1, 
             pages: Math.ceil(count / size) || 1,
             comments
         };
@@ -167,7 +148,7 @@ class PostService {
         if (!success) throw new ResponseError(400, 'failed to create comment');
 
         return (await Post.aggregate([
-            ...this.getCommentsAggrStages(_postId),
+            ...this.getCommentsStages(_postId),
             { $match: { _id: mongoose.Types.ObjectId(_commentId) } },
             { $project: { author: 1, content: 1, parent: 1, nLikes: 1, nDislikes: 1, nComments: 1 } }
         ]))[0]; //Aggregation returns an array
@@ -208,37 +189,88 @@ class PostService {
         await (comment.parent ? Promise.all([deleteComment(), updateParent()]) : deleteComment());
     }
     
-    getCountCommentAggrStages (_postId, floor) {
-        return floor ? [
-            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
-            { $addFields: { floor: { $arrayElemAt: [ '$comments', floor ] } } },
-            { $project: { _id: 0, 'comments.parent': 1, _floorId: '$floor._id' } },
+    getCountCommentStages (_postId, _replyId) {
+        _postId = mongoose.Types.ObjectId(_postId);
+        _replyId = _replyId ? mongoose.Types.ObjectId(_replyId) : _replyId;
+
+        return _replyId ? [
+            { $match: { _id: _postId } },
+            { $project: { _id: 0, 'comments._id': 1, comment: { 
+                $filter: { 
+                    input: '$comments',
+                    as: 'comment',
+                    cond: { $eq: [ '$$comment._id', _replyId ] }
+                }
+            } } },
+            { $unwind: '$comment' },
+            { $project: { comments: 1, _commentId: { $ifNull: ['$comment.parent', _replyId ] } } },
             { $unwind: '$comments' },
-            { $match: { $expr: { $eq: ['$comments.parent', '$_floorId' ] } } },
+            { $match: { $expr: { $eq: [ '$comments._id', '$_commentId' ] } } },
             { $count: 'count' }
         ] : [
-            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
+            { $match: { _id: _postId } },
             { $project: { _id: 0, 'comments._id': 1 } },
             { $unwind: '$comments' },
             { $count: 'count' }
         ];
     }
 
-    getCommentAggr (_postId, floor, page, size) {
-        return floor ? [
-            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
-            { $addFields: { floor: { $arrayElemAt: [ '$comments', floor ] } } },
-            { $project: { _id: 0, comments: 1, _floorId: '$floor._id' } },
-            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
-            { $match: { $expr: { $eq: ['$comments.parent', '$_floorId' ] } } },
-            { $skip: page ? (page - 1) * size : Math.floor(Math.max(floor - 1, 0) / size) * size },
-            { $limit: size },
-        ] : [
+    getCommentStages (_postId, _replyId, page, size) {
+        _postId =  mongoose.Types.ObjectId(_postId);
+        _replyId = _replyId ? mongoose.Types.ObjectId(_replyId) : _replyId;
 
+        return _replyId ? [
+            { $match: { _id: _postId } },
+            { $project: { _id: 0, comments: 1, comment: { 
+                $filter: { 
+                    input: '$comments',
+                    as: 'comment',
+                    cond: { $eq: [ '$$comment._id', _replyId ] }
+                }
+            } } },
+            { $unwind: '$comment' },
+            { $project: { comments: 1, _commentId: { $ifNull: ['$comment.parent', _replyId ] } } },
+            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
+            { $match: { $expr: { $eq: [ '$comments.parent', '$_commentId' ] } } },
+            { $replaceRoot: { newRoot: '$comments' } },
+            { $addFields: { page: {
+                $let: {
+                    vars: {
+                        i: { $indexOfArray: ['$comments', { $eq: ['$comments._id', '$_commentId'] }] }
+                    },
+                    in: {
+                        $cond: {
+                            if: { $eq: [ '$i', -1 ] },
+                            then: 0,
+                            else: { $subtract: [ '$$i', { $mod: [ '$$i', size ] } ] }
+                        }
+                    } // i - (i mod size)
+                }
+            } } },
+            { $skip: '$page' },
+            { $limit: size },
+            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+            { $unwind: '$author' },
+        ] : [
+            { $match: { _id: _postId } },
+            { $project: { _id: 0, comments: 1 } },
+            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
+            { $skip: (page - 1) * size },
+            { $limit: size },
+            { $replaceRoot: { newRoot: '$comments' } },
+            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+            { $unwind: '$author' },
+            { $lookup: { from: 'posts', localField: 'parent', foreignField: 'comments._id', as: 'post' } },
+            { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } },
+            { $addFields: { _parentId: '$parent', parent: '$post.comments' } },
+            { $project: { parent: { _id: 1, content: 1 }, author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] }, _parentId: 1, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } },
+            { $unwind: { path: '$parent', preserveNullAndEmptyArrays: true } },
+            { $match: { $expr: { $eq: [ '$parent._id', '$_parentId' ] } } },
+            { $unset: '_parentId' }
         ];
     }
 
-    getCommentsAggrStages (_postId, reply, page, size) {
+    getCommentsStages (_postId, reply, page, size) {
         const pre = [
             { $match: { _id: mongoose.Types.ObjectId(_postId) } },
             { $project: { comments: 1 } },
