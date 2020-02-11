@@ -13,7 +13,7 @@ class PostService {
         const posts = await Post.find(query)
             .select('title author tags rating updatedAt')
             .sort(sort)
-            .skip((size * page) - size)
+            .skip((page - 1) * size)
             .limit(size)
             .populate('author', 'username')
             .lean();
@@ -27,12 +27,17 @@ class PostService {
             .select('tags nLikes nDislikes author title content createdAt updatedAt nComments')
             .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nComments comments.updatedAt comments.createdAt')
             .lean();
+        if (!post) throw new ResponseError(404, 'post not found');
 
         if (user && post.likes.includes(user.id)) post.liked = true;
         else if (user && post.dislikes.includes(user.id)) post.disliked = true;
+
+        post.floor = 1;
+        post.comments.forEach((c, i) => c.floor = i + 2);
         
         delete post.likes;
         delete post.dislikes;
+
         return { post, pages: Math.ceil(post.nComments / size) || 1 };
     }
 
@@ -109,16 +114,38 @@ class PostService {
     }
 
     async getComments (_postId, _replyId, page, size) {
-        const [comments, [{ count }]] = await Promise.all([
-            Post.aggregate(this.getCommentStages(_postId, _replyId, page, size)),
-            Post.aggregate(this.getCountCommentStages(_postId, _replyId))
-        ]);
+        const post = await Post.findById(_postId)
+            .select('-_id comments._id comments.parent');
+        if (!post) throw new ResponseError(404, 'post not found');
+
+        let comments = [], count = 0, parent;
+        if (!_replyId) {
+            count = post.comments.length;
+            comments = await this._getPagedComments(_postId, page, size);
+        } else {
+            const reply = post.comments.id(_replyId);
+            if (!reply) throw new ResponseError(404, 'reply target not found');
+
+            _replyId = mongoose.Types.ObjectId(_replyId);
+            const _targetId = reply.parent || _replyId;
+
+            let skip = 0;
+            for (let i = 0; i < post.comments.length; i++) {
+                const c = post.comments[i];
+                if (!page && c._id.equals(_replyId)) skip = i;
+                if (c.parent && c.parent.equals(_targetId)) count += 1;
+            }
+
+            page = page || Math.floor(skip / size) || 1;
+            ([{ parent, comments }] = await this._getPagedReplyComments(_postId, _targetId, page, size));
+        }
         comments.forEach(c => { if (_.isEmpty(c.parent)) delete c.parent } );
-        return { 
+        return {
             page: parseInt(page) || 1, 
             pages: Math.ceil(count / size) || 1,
+            parent,
             comments
-        };
+        }
     }
 
     async createComment (_postId, author, content, _parentId) {
@@ -139,7 +166,7 @@ class PostService {
             $inc: { nComments: 1 }
         });
         const updateParent = () => Post.updateOne({ _id: _postId, 'comments._id': _parentId }, {
-            $push: { 'comments.$.comments': mongoose.Types.ObjectId(_commentId) },
+            $push: { 'comments.$.comments': _commentId },
             $inc: { 'comments.$.nComments': 1 }
         });
 
@@ -148,9 +175,14 @@ class PostService {
         if (!success) throw new ResponseError(400, 'failed to create comment');
 
         return (await Post.aggregate([
-            ...this.getCommentsStages(_postId),
-            { $match: { _id: mongoose.Types.ObjectId(_commentId) } },
-            { $project: { author: 1, content: 1, parent: 1, nLikes: 1, nDislikes: 1, nComments: 1 } }
+            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
+            { $project: { _id: 0, comments: 1 } },
+            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
+            { $match: { 'comments._id': _commentId } },
+            { $replaceRoot: { newRoot: '$comments' } },
+            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+            { $unwind: '$author' },
+            { $project: { floor: { $add: [ '$floor', 2 ] }, author: { _id: 1, username: 1 }, content: 1, parent: 1, nLikes: 1, nDislikes: 1, nComments: 1 } }
         ]))[0]; //Aggregation returns an array
     }
 
@@ -170,7 +202,8 @@ class PostService {
     }
 
     async deleteComment (_postId, _commentId, deletor) {
-        const post = await Post.findById(_postId, { comments: 1 });
+        const post = await Post.findById(_postId)
+            .select('comments._id comments.comments comments.author');
         if (!post) throw new ResponseError(404, 'post not found');
 
         const comment = post.comments.id(_commentId);
@@ -188,71 +221,39 @@ class PostService {
         });
         await (comment.parent ? Promise.all([deleteComment(), updateParent()]) : deleteComment());
     }
-    
-    getCountCommentStages (_postId, _replyId) {
-        _postId = mongoose.Types.ObjectId(_postId);
-        _replyId = _replyId ? mongoose.Types.ObjectId(_replyId) : _replyId;
 
-        return _replyId ? [
-            { $match: { _id: _postId } },
-            { $project: { _id: 0, 'comments._id': 1, comment: { 
-                $filter: { 
-                    input: '$comments',
-                    as: 'comment',
-                    cond: { $eq: [ '$$comment._id', _replyId ] }
+    _getPagedReplyComments (_postId, _parentId, page, size) {
+        return Post.aggregate([
+            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
+            { $project: { _id: 0, comments: 1 } },
+            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
+            {  
+                $facet: {
+                    parent: [
+                        { $match: { 'comments._id': _parentId } },
+                        { $replaceRoot: { newRoot: '$comments' } },
+                        { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+                        { $unwind: '$author' },
+                        { $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] }, _parentId: 1, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
+                    ],
+                    comments: [
+                        { $match: { 'comments.parent': _parentId } },
+                        { $skip: (page - 1) * size },
+                        { $limit: size },
+                        { $replaceRoot: { newRoot: '$comments' } },
+                        { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+                        { $unwind: '$author' },
+                        { $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] }, _parentId: 1, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
+                    ]
                 }
-            } } },
-            { $unwind: '$comment' },
-            { $project: { comments: 1, _commentId: { $ifNull: ['$comment.parent', _replyId ] } } },
-            { $unwind: '$comments' },
-            { $match: { $expr: { $eq: [ '$comments._id', '$_commentId' ] } } },
-            { $count: 'count' }
-        ] : [
-            { $match: { _id: _postId } },
-            { $project: { _id: 0, 'comments._id': 1 } },
-            { $unwind: '$comments' },
-            { $count: 'count' }
-        ];
+            },
+            { $unwind: '$parent' }
+        ]);
     }
 
-    getCommentStages (_postId, _replyId, page, size) {
-        _postId =  mongoose.Types.ObjectId(_postId);
-        _replyId = _replyId ? mongoose.Types.ObjectId(_replyId) : _replyId;
-
-        return _replyId ? [
-            { $match: { _id: _postId } },
-            { $project: { _id: 0, comments: 1, comment: { 
-                $filter: { 
-                    input: '$comments',
-                    as: 'comment',
-                    cond: { $eq: [ '$$comment._id', _replyId ] }
-                }
-            } } },
-            { $unwind: '$comment' },
-            { $project: { comments: 1, _commentId: { $ifNull: ['$comment.parent', _replyId ] } } },
-            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
-            { $match: { $expr: { $eq: [ '$comments.parent', '$_commentId' ] } } },
-            { $replaceRoot: { newRoot: '$comments' } },
-            { $addFields: { page: {
-                $let: {
-                    vars: {
-                        i: { $indexOfArray: ['$comments', { $eq: ['$comments._id', '$_commentId'] }] }
-                    },
-                    in: {
-                        $cond: {
-                            if: { $eq: [ '$i', -1 ] },
-                            then: 0,
-                            else: { $subtract: [ '$$i', { $mod: [ '$$i', size ] } ] }
-                        }
-                    } // i - (i mod size)
-                }
-            } } },
-            { $skip: '$page' },
-            { $limit: size },
-            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
-            { $unwind: '$author' },
-        ] : [
-            { $match: { _id: _postId } },
+    _getPagedComments (_postId, page = 1, size) {
+        return Post.aggregate([
+            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
             { $project: { _id: 0, comments: 1 } },
             { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
             { $skip: (page - 1) * size },
@@ -267,21 +268,7 @@ class PostService {
             { $unwind: { path: '$parent', preserveNullAndEmptyArrays: true } },
             { $match: { $expr: { $eq: [ '$parent._id', '$_parentId' ] } } },
             { $unset: '_parentId' }
-        ];
-    }
-
-    getCommentsStages (_postId, reply, page, size) {
-        const pre = [
-            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
-            { $project: { comments: 1 } },
-            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } }
-        ];
-        if (reply) pre.push({ $match: { 'comments.parent': mongoose.Types.ObjectId(reply) } });
-        const post = page && size ? [
-            { $skip: (page - 1) * size },
-            { $limit: size }
-        ] : [];
-        return [ ...pre, { $replaceWith: '$comments' }, ...post ];
+        ]);
     }
 
     deleteInPlace (arr, condition, shouldBreak = true) {
