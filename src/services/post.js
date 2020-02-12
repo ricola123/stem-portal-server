@@ -11,7 +11,7 @@ class PostService {
     async getPosts (paginator) {
         const { query, sort, page, size } = paginator;
         const posts = await Post.find(query)
-            .select('title author tags rating updatedAt')
+            .select('title author tags rating nComments updatedAt')
             .sort(sort)
             .skip((page - 1) * size)
             .limit(size)
