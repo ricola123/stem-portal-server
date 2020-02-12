@@ -12,7 +12,7 @@ const commentSchema = new Schema({
   nDislikes: { type: Number, required: false, default: 0 },
   parent: { type: Schema.Types.ObjectId, required: false, unique: false },
   comments: [{ type: Schema.Types.ObjectId, required: false, unique: false }],
-  nComments: { type: Number, required: false }
+  nComments: { type: Number, default: 0 }
 }, { timestamps: true });
 
 const postSchema = new Schema({
@@ -26,7 +26,7 @@ const postSchema = new Schema({
   nDislikes: { type: Number, required: false, default: 0 },
   rating: { type: Number, required: false, default: 0 },
   comments: [{ type: commentSchema, required: false, unqiue: false }],
-  nComments: { type: Number, required: false, default: 0 }
+  nComments: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Post', postSchema);
