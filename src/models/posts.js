@@ -25,7 +25,7 @@ const postSchema = new Schema({
   dislikes: [{ type: Schema.Types.ObjectId, required: false, unique: false }],
   nDislikes: { type: Number, required: false, default: 0 },
   rating: { type: Number, required: false, default: 0 },
-  comments: [commentSchema],
+  comments: [{ type: commentSchema, required: false, unqiue: false }],
   nComments: { type: Number, required: false, default: 0 }
 }, { timestamps: true });
 
