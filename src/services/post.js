@@ -127,17 +127,17 @@ class PostService {
             if (!reply) throw new ResponseError(404, 'reply target not found');
 
             _replyId = mongoose.Types.ObjectId(_replyId);
-            const _targetId = reply.parent || _replyId;
+            const _parentId = reply.parent;
 
             let skip = 0;
             for (let i = 0; i < post.comments.length; i++) {
                 const c = post.comments[i];
                 if (!page && c._id.equals(_replyId)) skip = i;
-                if (c.parent && c.parent.equals(_targetId)) count += 1;
+                if (c.parent && c.parent.equals(_parentId)) count += 1;
             }
 
-            page = page || Math.floor(skip / size) || 1;
-            ([{ parent, comments }] = await this._getPagedReplyComments(_postId, _targetId, page, size));
+            page = page || Math.floor(skip / size) + 1;
+            ([{ parent, comments }] = await this._getPagedReplyComments(_postId, _parentId, _replyId, page, size));
         }
         comments.forEach(c => { if (_.isEmpty(c.parent)) delete c.parent } );
         return {
@@ -222,7 +222,7 @@ class PostService {
         await (comment.parent ? Promise.all([deleteComment(), updateParent()]) : deleteComment());
     }
 
-    _getPagedReplyComments (_postId, _parentId, page, size) {
+    _getPagedReplyComments (_postId, _parentId, _replyId, page, size) {
         return Post.aggregate([
             { $match: { _id: mongoose.Types.ObjectId(_postId) } },
             { $project: { _id: 0, comments: 1 } },
@@ -230,14 +230,14 @@ class PostService {
             {  
                 $facet: {
                     parent: [
-                        { $match: { 'comments._id': _parentId } },
+                        { $match: { 'comments._id': _parentId || _replyId } },
                         { $replaceRoot: { newRoot: '$comments' } },
                         { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
                         { $unwind: '$author' },
                         { $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] }, _parentId: 1, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
                     ],
                     comments: [
-                        { $match: { 'comments.parent': _parentId } },
+                        { $match: { 'comments.parent': _parentId || _replyId } },
                         { $skip: (page - 1) * size },
                         { $limit: size },
                         { $replaceRoot: { newRoot: '$comments' } },
