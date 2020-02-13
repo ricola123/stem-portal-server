@@ -123,21 +123,20 @@ class PostService {
             count = post.comments.length;
             comments = await this._getPagedComments(_postId, page, size);
         } else {
+            _replyId = mongoose.Types.ObjectId(_replyId);
             const reply = post.comments.id(_replyId);
             if (!reply) throw new ResponseError(404, 'reply target not found');
 
-            _replyId = mongoose.Types.ObjectId(_replyId);
             const _commentId = reply.parent || _replyId;
 
             let skip = 0;
             for (let i = 0; i < post.comments.length; i++) {
                 const c = post.comments[i];
-                if (!page && c._id.equals(_replyId)) skip = i;
+                if (!page && c._id.equals(_replyId)) skip = count;
                 if (c.parent && c.parent.equals(_commentId)) count += 1;
             }
 
             page = page || Math.ceil(skip / size) || 1;
-            console.log(page, skip, count);
             ([{ parent, comments }] = await this._getPagedReplyComments(_postId, _commentId, page, size));
         }
         comments.forEach(c => { if (_.isEmpty(c.parent)) delete c.parent } );
