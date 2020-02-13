@@ -121,7 +121,9 @@ class PostService {
         let comments = [], count = 0, parent;
         if (!_replyId) {
             count = post.comments.length;
-            comments = await this._getPagedComments(_postId, page, size);
+            page = page || 1;
+            comments = await this._getPagedComments(_postId, undefined, page, size);
+
         } else {
             _replyId = mongoose.Types.ObjectId(_replyId);
             const reply = post.comments.id(_replyId);
@@ -137,15 +139,11 @@ class PostService {
             }
 
             page = parseInt(page) || Math.floor(skip / size) + 1;
-            ([{ parent, comments }] = await this._getPagedReplyComments(_postId, _commentId, page, size));
+            ([{ parent, comments }] = await this._getPagedComments(_postId, _commentId, page, size));
         }
+
         comments.forEach(c => { if (_.isEmpty(c.parent)) delete c.parent } );
-        return {
-            parent,
-            comments,
-            page,
-            pages: Math.ceil(count / size) || 1,
-        }
+        return { parent, comments, page, pages: Math.ceil(count / size) || 1 };
     }
 
     async createComment (_postId, author, content, _parentId) {
@@ -175,14 +173,11 @@ class PostService {
         if (!success) throw new ResponseError(400, 'failed to create comment');
 
         return (await Post.aggregate([
-            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
-            { $project: { _id: 0, comments: 1 } },
-            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
+            ...this._base(mongoose.Types.ObjectId(_postId)),
             { $match: { 'comments._id': _commentId } },
             { $replaceRoot: { newRoot: '$comments' } },
-            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
-            { $unwind: '$author' },
-            { $project: { floor: { $add: [ '$floor', 2 ] }, author: { _id: 1, username: 1 }, content: 1, parent: 1, nLikes: 1, nDislikes: 1, nComments: 1 } }
+            ...this._lookupAuthor(),
+            ...this._project(false)
         ]))[0]; //Aggregation returns an array
     }
 
@@ -222,54 +217,71 @@ class PostService {
         await (comment.parent ? Promise.all([deleteComment(), updateParent()]) : deleteComment());
     }
 
-    _getPagedReplyComments (_postId, _commentId, page, size) {
-        return Post.aggregate([
-            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
-            { $project: { _id: 0, comments: 1 } },
-            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
-            {  
+    _getPagedComments (_postId, _commentId, page, size) {
+        return _commentId
+        ? Post.aggregate([
+            ...this._base(mongoose.Types.ObjectId(_postId)),
+            {
                 $facet: {
                     parent: [
                         { $match: { 'comments._id': _commentId } },
                         { $replaceRoot: { newRoot: '$comments' } },
-                        { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
-                        { $unwind: '$author' },
-                        { $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] }, _parentId: 1, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
+                        ...this._lookupAuthor(),
+                        ...this._project(false)
                     ],
                     comments: [
                         { $match: { 'comments.parent': _commentId } },
-                        { $skip: (page - 1) * size },
-                        { $limit: size },
+                        ...this._paginate(page, size),
                         { $replaceRoot: { newRoot: '$comments' } },
-                        { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
-                        { $unwind: '$author' },
-                        { $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] }, _parentId: 1, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } }
+                        ...this._lookupAuthor(),
+                        ...this._project(false)
                     ]
                 }
-            },
-            { $unwind: '$parent' }
-        ]);
-    }
-
-    _getPagedComments (_postId, page = 1, size) {
-        return Post.aggregate([
-            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
-            { $project: { _id: 0, comments: 1 } },
-            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
-            { $skip: (page - 1) * size },
-            { $limit: size },
+            }
+        ])
+        : Post.aggregate([
+            ...this._base(mongoose.Types.ObjectId(_postId)),
+            ...this._paginate(page, size),
             { $replaceRoot: { newRoot: '$comments' } },
-            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
-            { $unwind: '$author' },
+            ...this._lookupAuthor(),
             { $lookup: { from: 'posts', localField: 'parent', foreignField: 'comments._id', as: 'post' } },
             { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } },
             { $addFields: { _parentId: '$parent', parent: '$post.comments' } },
-            { $project: { parent: { _id: 1, content: 1 }, author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] }, _parentId: 1, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 } },
+            ...this._project(true),
             { $unwind: { path: '$parent', preserveNullAndEmptyArrays: true } },
             { $match: { $expr: { $eq: [ '$parent._id', '$_parentId' ] } } },
             { $unset: '_parentId' }
         ]);
     }
+
+    _base (_postId) {
+        return [
+            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
+            { $project: { _id: 0, comments: 1 } },
+            { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } }
+        ]
+    };
+
+    _paginate (page, size) {
+        return [
+            { $skip: (page - 1) * size },
+            { $limit: size }
+        ]
+    };
+
+    _lookupAuthor () {
+        return [
+            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+            { $unwind: '$author' }
+        ]
+    };
+
+    _project (showParent) {
+        return [{
+            $project: { parent: (showParent ? { _id: 1, content: 1 } : undefined), author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] },
+            _parentId: showParent ? 1 : undefined, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 }
+        }];
+    };
 
     _deleteInPlace (arr, condition, shouldBreak = true) {
         for (let i = 0; i < arr.length; i++) {
