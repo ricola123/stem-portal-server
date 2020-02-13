@@ -20,23 +20,9 @@ class PostService {
         return { posts, page };
     }
 
-    async getPost (_postId, user, size) {
-        const post = await Post.findById(_postId, { comments: { $slice: size } })
-            .populate('author', 'username type email school')
-            .populate('comments.author', 'username')
-            .select('tags nLikes nDislikes author title content createdAt updatedAt nComments')
-            .select('comments._id comments.author comments.content comments.nLikes comments.nDislikes comments.nComments comments.updatedAt comments.createdAt')
-            .lean();
+    async getPost (_postId, _userId, size) {
+        const [post] = await this._getPost(_postId, _userId, size);
         if (!post) throw new ResponseError(404, 'post not found');
-
-        if (user && post.likes.includes(user.id)) post.liked = true;
-        else if (user && post.dislikes.includes(user.id)) post.disliked = true;
-
-        post.floor = 1;
-        post.comments.forEach((c, i) => c.floor = i + 2);
-        
-        delete post.likes;
-        delete post.dislikes;
 
         return { post, pages: Math.ceil(post.nComments / size) || 1 };
     }
@@ -177,7 +163,7 @@ class PostService {
             { $match: { 'comments._id': _commentId } },
             { $replaceRoot: { newRoot: '$comments' } },
             ...this._lookupAuthor(),
-            ...this._project(false)
+            ...this._projectComment(false)
         ]))[0]; //Aggregation returns an array
     }
 
@@ -227,14 +213,14 @@ class PostService {
                         { $match: { 'comments._id': _commentId } },
                         { $replaceRoot: { newRoot: '$comments' } },
                         ...this._lookupAuthor(),
-                        ...this._project(false)
+                        ...this._projectComment(false)
                     ],
                     comments: [
                         { $match: { 'comments.parent': _commentId } },
                         ...this._paginate(page, size),
                         { $replaceRoot: { newRoot: '$comments' } },
                         ...this._lookupAuthor(),
-                        ...this._project(false)
+                        ...this._projectComment(false)
                     ]
                 }
             }
@@ -244,13 +230,40 @@ class PostService {
             ...this._paginate(page, size),
             { $replaceRoot: { newRoot: '$comments' } },
             ...this._lookupAuthor(),
-            { $lookup: { from: 'posts', localField: 'parent', foreignField: 'comments._id', as: 'post' } },
-            { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } },
-            { $addFields: { _parentId: '$parent', parent: '$post.comments' } },
-            ...this._project(true),
-            { $unwind: { path: '$parent', preserveNullAndEmptyArrays: true } },
-            { $match: { $expr: { $eq: [ '$parent._id', '$_parentId' ] } } },
-            { $unset: '_parentId' }
+            ...this._lookupParent()
+        ]);
+    }
+
+    _getPost (_postId, _userId, size) {
+        return Post.aggregate([
+            { $match: { _id: mongoose.Types.ObjectId(_postId) } },
+            {
+                $facet: {
+                    comments: [
+                        { $project: { _id: 0, comments: 1 } },
+                        { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
+                        ...this._paginate(1, size),
+                        { $replaceRoot: { newRoot: '$comments' } },
+                        ...this._lookupAuthor(),
+                        ...this._lookupParent()
+                    ],
+                    post: [
+                        { $project: { rating: 0, comments: 0, __v: 0 } },
+                        { $addFields: { floor: 1, liked: { $in: [ _userId, '$likes' ] }, disliked: { $in: [ _userId, '$dislikes' ] } } },
+                        ...this._lookupAuthor()
+                    ]
+                }
+            },
+            { $unwind: '$post' },
+            { $project: 
+                {
+                    post: {
+                        comments: '$comments', author: { _id: 1, username: 1, school: 1 }, floor: 1, liked: 1, disliked: 1,
+                        _id: 1, title: 1, content: 1, tags: 1, nLikes: 1, nDislikes: 1, nComments: 1, createdAt: 1, updatedAt: 1
+                    }
+                }
+            },
+            { $replaceRoot: { newRoot: '$post' } }
         ]);
     }
 
@@ -259,29 +272,41 @@ class PostService {
             { $match: { _id: mongoose.Types.ObjectId(_postId) } },
             { $project: { _id: 0, comments: 1 } },
             { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } }
-        ]
-    };
+        ];
+    }
 
     _paginate (page, size) {
         return [
             { $skip: (page - 1) * size },
             { $limit: size }
-        ]
-    };
+        ];
+    }
 
     _lookupAuthor () {
         return [
             { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
             { $unwind: '$author' }
-        ]
-    };
+        ];
+    }
 
-    _project (showParent) {
+    _lookupParent () {
+        return [
+            { $lookup: { from: 'posts', localField: 'parent', foreignField: 'comments._id', as: 'post' } },
+            { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } },
+            { $addFields: { _parentId: '$parent', parent: '$post.comments' } },
+            ...this._projectComment(true),
+            { $unwind: { path: '$parent', preserveNullAndEmptyArrays: true } },
+            { $match: { $expr: { $eq: [ '$parent._id', '$_parentId' ] } } },
+            { $unset: '_parentId' }
+        ];
+    }
+
+    _projectComment (showParent) {
         return [{
             $project: { parent: (showParent ? { _id: 1, content: 1 } : undefined), author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] },
             _parentId: showParent ? 1 : undefined, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 }
         }];
-    };
+    }
 
     _deleteInPlace (arr, condition, shouldBreak = true) {
         for (let i = 0; i < arr.length; i++) {
