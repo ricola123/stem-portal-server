@@ -86,12 +86,12 @@ class PostService {
                 post.likes.push(rater.id);
                 // after like, remove potential dislike
                 if (post.dislikes.includes(rater.id)) {
-                    this.deleteInPlace(post.dislikes, rater.id, false);
+                    this._deleteInPlace(post.dislikes, rater.id, false);
                 }
             }
         } else if (liked !== undefined) { //user reverts like
             if (post.likes.includes(rater.id)) {
-                this.deleteInPlace(post.likes, rater.id);
+                this._deleteInPlace(post.likes, rater.id);
             }
         }
         if (disliked) {
@@ -99,12 +99,12 @@ class PostService {
                 post.dislikes.push(rater.id);
                 // after dislike, remove potential like
                 if (post.likes.includes(rater.id)) {
-                    this.deleteInPlace(post.likes, rater.id, false);
+                    this._deleteInPlace(post.likes, rater.id, false);
                 }
             }
         } else if (disliked !== undefined) { //user reverts dislike
             if (post.dislikes.includes(rater.id)) {
-                this.deleteInPlace(post.dislikes, rater.id);
+                this._deleteInPlace(post.dislikes, rater.id);
             }
         }
         post.nLikes = post.likes.length;
@@ -271,7 +271,7 @@ class PostService {
         ]);
     }
 
-    deleteInPlace (arr, condition, shouldBreak = true) {
+    _deleteInPlace (arr, condition, shouldBreak = true) {
         for (let i = 0; i < arr.length; i++) {
             if (arr[i].equals(condition)) {
                 arr.splice(i, 1);
