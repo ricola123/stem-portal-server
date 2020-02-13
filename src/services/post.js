@@ -136,7 +136,7 @@ class PostService {
                 if (c.parent && c.parent.equals(_parentId)) count += 1;
             }
 
-            page = page || Math.floor(skip / size) + 1;
+            page = page || Math.ceil(skip / size);
             ([{ parent, comments }] = await this._getPagedReplyComments(_postId, _parentId, _replyId, page, size));
         }
         comments.forEach(c => { if (_.isEmpty(c.parent)) delete c.parent } );
