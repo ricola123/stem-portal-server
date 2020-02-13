@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 
 const { ResponseError } = require('../../utils');
 
+const exceptions = new Set(['any', 'optional', 'admin']);
+
 module.exports = (role = 'any') => {
   return (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -11,7 +13,7 @@ module.exports = (role = 'any') => {
       const options = { expiresIn: '2d', issuer: 'https://www.stem-portal.hk' };
       try {
         const user = jwt.verify(token, process.env.JWT_SECRET, options);
-        if (role !== 'any' && role !== user.type) throw new ResponseError(403, 'forbidden');
+        if (role !== user.type && !exceptions.has(role)) throw new ResponseError(403, 'forbidden');
         user.id = mongoose.Types.ObjectId(user.id); // convert string to user id
         req.user = user;
         next();
