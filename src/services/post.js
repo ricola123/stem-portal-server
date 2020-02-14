@@ -37,7 +37,8 @@ class PostService {
     }
 
     async updatePost (updator, _postId, updates) {
-        const post = await Post.findById(_postId);
+        const post = await Post.findById(_postId)
+            .select('title content tags author');
         if (!post) throw new ResponseError(404, 'post not found');
         if (!updator.id.equals(post.author)) throw new ResponseError(403, 'only authors can update their own posts');
 
@@ -63,40 +64,16 @@ class PostService {
         ]);
     }
 
-    async reactPost (rater, _postId, liked, disliked) {
-        const post = await Post.findById(_postId);
-        if (!post) throw new ResponseError(404, 'post not found');
-
-        if (liked) {
-            if (!post.likes.includes(rater.id)) {
-                post.likes.push(rater.id);
-                // after like, remove potential dislike
-                if (post.dislikes.includes(rater.id)) {
-                    this._deleteInPlace(post.dislikes, rater.id, false);
-                }
-            }
-        } else if (liked !== undefined) { //user reverts like
-            if (post.likes.includes(rater.id)) {
-                this._deleteInPlace(post.likes, rater.id);
-            }
-        }
-        if (disliked) {
-            if (!post.dislikes.includes(rater.id)) {
-                post.dislikes.push(rater.id);
-                // after dislike, remove potential like
-                if (post.likes.includes(rater.id)) {
-                    this._deleteInPlace(post.likes, rater.id, false);
-                }
-            }
-        } else if (disliked !== undefined) { //user reverts dislike
-            if (post.dislikes.includes(rater.id)) {
-                this._deleteInPlace(post.dislikes, rater.id);
-            }
-        }
-        post.nLikes = post.likes.length;
-        post.nDislikes = post.dislikes.length;
-        post.rating = post.nLikes - post.nDislikes;
-        await post.save();
+    async reactPost (_userId, _postId, liked, disliked) {
+        if (liked && disliked) throw new ResponseError(400, 'cannot like and dislike post at the same time');
+        await Post.updateOne({ _id: _postId }, [
+            { $set: {
+                likes: { [liked ? '$setUnion' : '$setDifference']: [ '$likes', [ _userId ] ] },
+                dislikes: { [disliked ? '$setUnion' : '$setDifference']: [ '$dislikes', [ _userId ] ] },
+            } },
+            { $set: { nLikes: { $size: '$likes' }, nDislikes: { $size: '$dislikes' } } },
+            { $set: { rating: { $subtract: [ '$nLikes', '$nDislikes' ] } } }
+        ]);
     }
 
     async getComments (_postId, _replyId, page, size) {
@@ -107,7 +84,7 @@ class PostService {
         let comments = [], count = 0, parent;
         if (!_replyId) {
             count = post.comments.length;
-            page = page || 1;
+            page = parseInt(page) || 1;
             comments = await this._getPagedComments(_postId, undefined, page, size);
 
         } else {
@@ -162,15 +139,16 @@ class PostService {
             ...this._base(mongoose.Types.ObjectId(_postId)),
             { $match: { 'comments._id': _commentId } },
             { $replaceRoot: { newRoot: '$comments' } },
+            ...this._countReactions(),
             ...this._lookupAuthor(),
             ...this._projectComment(false)
         ]))[0]; //Aggregation returns an array
     }
 
     async updateComment (_postId, _commentId, updator, content) {
-        const post = await Post.findById(_postId, { comments: 1 });
+        const post = await Post.findById(_postId)
+            .select('comments._id comments.author comments.content');
         if (!post) throw new ResponseError(404, 'post not found');
-
 
         const comment = post.comments.id(_commentId);
         if (!comment) throw new ResponseError(404, 'comment not found');
@@ -203,6 +181,16 @@ class PostService {
         await (comment.parent ? Promise.all([deleteComment(), updateParent()]) : deleteComment());
     }
 
+    async reactComment (_userId, _postId, _commentId, liked, disliked) {
+        if (liked && disliked) throw new ResponseError(400, 'cannot like and dislike comment at the same time');
+
+        const operations = { $addToSet: {}, $pull: {} };
+        operations[liked ? '$addToSet' : '$pull']['comments.$.likes'] = _userId;
+        operations[disliked ? '$addToSet' : '$pull']['comments.$.dislikes'] = _userId;
+
+        await Post.updateOne({ _id: _postId, 'comments._id': _commentId }, operations);
+    }
+
     _getPagedComments (_postId, _commentId, page, size) {
         return _commentId
         ? Post.aggregate([
@@ -212,6 +200,7 @@ class PostService {
                     parent: [
                         { $match: { 'comments._id': _commentId } },
                         { $replaceRoot: { newRoot: '$comments' } },
+                        ...this._countReactions(),
                         ...this._lookupAuthor(),
                         ...this._projectComment(false)
                     ],
@@ -219,6 +208,7 @@ class PostService {
                         { $match: { 'comments.parent': _commentId } },
                         ...this._paginate(page, size),
                         { $replaceRoot: { newRoot: '$comments' } },
+                        ...this._countReactions(),
                         ...this._lookupAuthor(),
                         ...this._projectComment(false)
                     ]
@@ -229,6 +219,7 @@ class PostService {
             ...this._base(mongoose.Types.ObjectId(_postId)),
             ...this._paginate(page, size),
             { $replaceRoot: { newRoot: '$comments' } },
+            ...this._countReactions(),
             ...this._lookupAuthor(),
             ...this._lookupParent()
         ]);
@@ -244,6 +235,7 @@ class PostService {
                         { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
                         ...this._paginate(1, size),
                         { $replaceRoot: { newRoot: '$comments' } },
+                        ...this._countReactions(),
                         ...this._lookupAuthor(),
                         ...this._lookupParent()
                     ],
@@ -282,6 +274,10 @@ class PostService {
         ];
     }
 
+    _countReactions () {
+        return [ { $set: { nLikes: { $size: '$likes' }, nDislikes: { $size: '$dislikes' } } } ]
+    }
+
     _lookupAuthor () {
         return [
             { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
@@ -302,10 +298,15 @@ class PostService {
     }
 
     _projectComment (showParent) {
-        return [{
-            $project: { parent: (showParent ? { _id: 1, content: 1 } : undefined), author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] },
-            _parentId: showParent ? 1 : undefined, content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 }
-        }];
+        const base = {
+            $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] },
+            content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 }
+        };
+        if (showParent) {
+            base.$project.parent = { _id: 1, content: 1 };
+            base.$project._parentId = 1
+        }
+        return [base];
     }
 
     _deleteInPlace (arr, condition, shouldBreak = true) {

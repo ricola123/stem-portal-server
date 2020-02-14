@@ -8,8 +8,7 @@ const schemas = require('../../validators/posts');
 
 module.exports = router => {
     router.route('/forum/posts').get(validate(schemas.getPosts), paginate('post'), async (req, res) => {
-        const paginator = req.paginator;
-        const { posts, page } = await PostService.getPosts(paginator);
+        const { posts, page } = await PostService.getPosts(req.paginator);
         res.status(200).send({ status: 200, posts, page });
     });
     router.route('/forum/posts').post(authorize(), validate(schemas.createPost), async (req, res) => {
@@ -24,9 +23,8 @@ module.exports = router => {
         res.status(200).send({ status: 200, post, pages });
     });
     router.route('/forum/posts/:id').patch(authorize(), validate(schemas.updatePost), async (req, res) => {
-        const updator = req.user;
         const _postId = req.params.id;
-        await PostService.updatePost(updator, _postId, req.body);
+        await PostService.updatePost(req.user.id, _postId, req.body);
         res.status(204).send();
     });
     router.route('/forum/posts/:id').delete(authorize(), validate(schemas.deletePost), async (req, res) => {
@@ -65,6 +63,12 @@ module.exports = router => {
         const { pid, cid } = req.params;
         const deletor = req.user;
         await PostService.deleteComment(pid, cid, deletor);
+        res.status(204).send();
+    });
+    router.route('/forum/posts/:pid/comments/:cid/react').post(authorize(), validate(schemas.reactComment), async (req, res) => {
+        const { pid, cid } = req.params;
+        const { liked, disliked } = req.body;
+        await PostService.reactComment(req.user.id, pid, cid, liked, disliked);
         res.status(204).send();
     });
 };

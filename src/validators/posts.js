@@ -34,6 +34,7 @@ module.exports = {
         params: Joi.object({ id: Joi.objectId().required() })
     },
     reactPost: {
+        params: Joi.object({ id: Joi.objectId().required() }),
         body: Joi.object({
             liked: Joi.boolean(),
             disliked: Joi.boolean()
@@ -66,5 +67,15 @@ module.exports = {
             pid: Joi.objectId().required(),
             cid: Joi.objectId().required()
         }),
+    },
+    reactComment: {
+        params: Joi.object({
+            pid: Joi.objectId().required(),
+            cid: Joi.objectId().required()
+        }),
+        body: Joi.object({
+            liked: Joi.boolean(),
+            disliked: Joi.boolean()
+        })
     }
 };

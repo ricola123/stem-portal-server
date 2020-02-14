@@ -7,9 +7,7 @@ const commentSchema = new Schema({
   author: { type: Schema.Types.ObjectId, required: true, unique: false, ref: 'User' },
   content: { type: String, required: true, trim: true },
   likes: [{ type: Schema.Types.ObjectId, required: false, unique: false, ref: 'User' }],
-  nLikes: { type: Number, required: false, default: 0 },
   dislikes: [{ type: Schema.Types.ObjectId, required: false, unique: false }],
-  nDislikes: { type: Number, required: false, default: 0 },
   parent: { type: Schema.Types.ObjectId, required: false, unique: false },
   comments: [{ type: Schema.Types.ObjectId, required: false, unique: false }],
   nComments: { type: Number, default: 0 }
