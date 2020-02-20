@@ -47,9 +47,8 @@ module.exports = router => {
     });
     router.route('/forum/posts/:id/comments').post(authorize(), validate(schemas.createComment), async (req, res) => {
         const _postId = req.params.id;
-        const author = req.user;
         const { content, reply } = req.body;
-        const comment = await PostService.createComment(_postId, author, content, reply);
+        const comment = await PostService.createComment(_postId, req.user.id, content, reply);
         res.status(201).send({ status: 201, comment });
     });
     router.route('/forum/posts/:pid/comments/:cid').patch(authorize(), validate(schemas.updateComment), async (req, res) => {

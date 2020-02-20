@@ -109,8 +109,9 @@ class PostService {
         return { parent, comments, page, pages: Math.ceil(count / size) || 1 };
     }
 
-    async createComment (_postId, author, content, _parentId) {
-        const post = await Post.findById(_postId).select('comments');
+    async createComment (_postId, _userId, content, _parentId) {
+        const post = await Post.findById(_postId)
+          .select('comments._id comments.parent');
         if (!post) throw new ResponseError(404, 'post not found');
 
         if (_parentId) {
@@ -120,7 +121,7 @@ class PostService {
         }
 
         const _commentId = mongoose.Types.ObjectId();
-        const comment = { _id: _commentId, author: author.id, parent: _parentId, content };
+        const comment = { _id: _commentId, author: _userId, parent: _parentId, content };
 
         const postComment = () => Post.updateOne({ _id: _postId }, { 
             $push: { comments: comment },
@@ -141,7 +142,8 @@ class PostService {
             { $replaceRoot: { newRoot: '$comments' } },
             ...this._countReactions(),
             ...this._lookupAuthor(),
-            ...this._projectComment(false)
+            ...this._lookupParent(),
+            ...this._projectComment(true)
         ]))[0]; //Aggregation returns an array
     }
 
@@ -304,7 +306,7 @@ class PostService {
         };
         if (showParent) {
             base.$project.parent = { _id: 1, content: 1 };
-            base.$project._parentId = 1
+            base.$project._parentId = 1;
         }
         return [base];
     }
