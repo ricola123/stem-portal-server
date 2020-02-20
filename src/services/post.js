@@ -215,7 +215,8 @@ class PostService {
                         ...this._projectComment(false)
                     ]
                 }
-            }
+            },
+            { $unwind: '$parent' }
         ])
         : Post.aggregate([
             ...this._base(mongoose.Types.ObjectId(_postId)),
