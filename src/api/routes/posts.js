@@ -19,7 +19,8 @@ module.exports = router => {
     });
     router.route('/forum/posts/:id').get(authorize('optional'), validate(schemas.getPost), async (req, res) => {
         const _postId = req.params.id;
-        const { post, pages } = await PostService.getPost(_postId, req.user.id, req.query.size || 10);
+        const _userId = req.user ? req.user.id : undefined;
+        const { post, pages } = await PostService.getPost(_postId, _userId, req.query.size || 10);
         res.status(200).send({ status: 200, post, pages });
     });
     router.route('/forum/posts/:id').patch(authorize(), validate(schemas.updatePost), async (req, res) => {
