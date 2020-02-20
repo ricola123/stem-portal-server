@@ -36,7 +36,7 @@ module.exports = router => {
     router.route('/forum/posts/:id/react').post(authorize(), validate(schemas.reactPost), async (req, res) => {
         const _postId = req.params.id;
         const { liked, disliked } = req.body;
-        await PostService.reactPost(req.user, _postId, liked, disliked);
+        await PostService.reactPost(req.user.id, _postId, liked, disliked);
         res.status(204).send();
     });
     router.route('/forum/posts/:id/comments').get(validate(schemas.getComments), async (req, res) => {
