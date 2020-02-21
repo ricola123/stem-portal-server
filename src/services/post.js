@@ -224,7 +224,8 @@ class PostService {
             { $replaceRoot: { newRoot: '$comments' } },
             ...this._countReactions(),
             ...this._lookupAuthor(),
-            ...this._lookupParent()
+            ...this._lookupParent(),
+            ...this._projectComment(true)
         ]);
     }
 
