@@ -20,9 +20,11 @@ class CourseService {
         .skip((size * page) - size)
         .limit(size)
         .populate('author', 'username')
-        .select('name author tags rating nRatings'),
+        .select('name author tags rating nRatings')
+        .lean(),
       Course.countDocuments(query)
     ]);
+    courses.forEach(c => c.author = c.author || 'account removed');
     return { courses, page, pages: Math.ceil(count / size) || 1 };
   }
 
@@ -44,12 +46,14 @@ class CourseService {
       .lean();
     if (!course) throw new ResponseError(404, 'course not found');
 
+    if (!course.author) course.author = 'account removed';
     course.chapters = JSON.parse(course.chapters);
     return course;
   }
 
   async updateCourse (_id, name, updator, description, tags, chapters) {
-    const course = await Course.findById(_id);
+    const course = await Course.findById(_id)
+      .select('-__v -_id');
     if (!course) throw new ResponseError(404, 'course not found');
     if (!updator.id.equals(course.author)) throw new ResponseError(403, 'forbidden');
     

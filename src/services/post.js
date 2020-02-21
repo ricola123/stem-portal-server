@@ -284,7 +284,8 @@ class PostService {
     _lookupAuthor () {
         return [
             { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
-            { $unwind: '$author' }
+            { $unwind: '$author' },
+            { $set: { author: { $ifNull: [ '$author', 'account removed' ] } } }
         ];
     }
 
@@ -293,16 +294,16 @@ class PostService {
             { $lookup: { from: 'posts', localField: 'parent', foreignField: 'comments._id', as: 'post' } },
             { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } },
             { $addFields: { _parentId: '$parent', parent: '$post.comments' } },
-            ...this._projectComment(true),
+            ...this._projectComment(true, false),
             { $unwind: { path: '$parent', preserveNullAndEmptyArrays: true } },
             { $match: { $expr: { $eq: [ '$parent._id', '$_parentId' ] } } },
             { $unset: '_parentId' }
         ];
     }
 
-    _projectComment (showParent) {
+    _projectComment (showParent, adjustFloor) {
         const base = {
-            $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', 2 ] },
+            $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', adjustFloor ? 2 : 0 ] },
             content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 }
         };
         if (showParent) {
