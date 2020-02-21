@@ -240,7 +240,8 @@ class PostService {
                         { $replaceRoot: { newRoot: '$comments' } },
                         ...this._countReactions(),
                         ...this._lookupAuthor(),
-                        ...this._lookupParent()
+                        ...this._lookupParent(),
+                        ...this._projectComment(true)
                     ],
                     post: [
                         { $project: { rating: 0, comments: 0, __v: 0 } },
