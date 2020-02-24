@@ -15,13 +15,13 @@ class PostService {
             .sort(sort)
             .skip((page - 1) * size)
             .limit(size)
-            .populate('author', 'username')
+            .populate('author', 'username type')
             .lean();
         return { posts, page };
     }
 
     async getPost (_postId, _userId, size) {
-        const [post] = await this._getPost(_postId, _userId, size);
+        const [post] = await this._getPost(_postId, _userId, parseInt(size));
         if (!post) throw new ResponseError(404, 'post not found');
 
         return { post, pages: Math.ceil(post.nComments / size) || 1 };
@@ -255,7 +255,7 @@ class PostService {
             { $project: 
                 {
                     post: {
-                        comments: '$comments', author: { _id: 1, username: 1, school: 1 }, floor: 1, liked: 1, disliked: 1,
+                        comments: '$comments', author: { _id: 1, username: 1, type: 1, school: 1 }, floor: 1, liked: 1, disliked: 1,
                         _id: 1, title: 1, content: 1, tags: 1, nLikes: 1, nDislikes: 1, nComments: 1, createdAt: 1, updatedAt: 1
                     }
                 }
@@ -305,7 +305,7 @@ class PostService {
 
     _projectComment (showParent, keepFloor) {
         const base = {
-            $project: { author: { _id: 1, username: 1 }, floor: { $add: [ '$floor', keepFloor ? 0 : 2 ] },
+            $project: { author: { _id: 1, username: 1, type: 1 }, floor: { $add: [ '$floor', keepFloor ? 0 : 2 ] },
             content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 }
         };
         if (showParent) {

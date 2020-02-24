@@ -13,7 +13,8 @@ module.exports = {
         })
     },
     getPost: {
-        params: Joi.object({ id: Joi.objectId().required() })
+        params: Joi.object({ id: Joi.objectId().required() }),
+        query: Joi.object({ size: Joi.number().min(5).max(20) })
     },
     createPost: {
         body: Joi.object({

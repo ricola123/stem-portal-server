@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const commentSchema = new Schema({
-  _id: { type: Schema.Types.ObjectId, required: true, unique: true },
+  _id: { type: Schema.Types.ObjectId, required: false, unique: false },
   author: { type: Schema.Types.ObjectId, required: true, unique: false, ref: 'User' },
   content: { type: String, required: true, trim: true },
   likes: [{ type: Schema.Types.ObjectId, required: false, unique: false, ref: 'User' }],

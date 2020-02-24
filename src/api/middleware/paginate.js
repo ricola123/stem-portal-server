@@ -33,7 +33,6 @@ module.exports = docType => {
     if (tags) paginator.query.tags = { $in: tags.split(',') };
 
     paginator.sort = sortOptions[docType][sort];
-
     req.paginator = paginator;
     next();
   };
