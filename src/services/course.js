@@ -28,6 +28,72 @@ class CourseService {
     return { courses, page, pages: Math.ceil(count / size) || 1 };
   }
 
+  async getInProgressCourses ({ query, page, size }, user) {
+    const [{ pages, courses }] = await User.aggregate([
+      { $match: { _id: user.id } },
+      { $project: { _id: 0, courses: '$courses.inProgress' } },
+      {
+        $facet: {
+          pages: [
+            {
+              $project: {
+                pages: {
+                  $ceil: { $divide: [ { $size: '$courses' }, size ] }
+                } 
+              }
+            }
+          ],
+          courses: [
+            { $lookup: { from: 'courses', localField: 'courses', 'foreignField': '_id', as: 'courses' } },
+            { $unwind: '$courses' },
+            { $replaceRoot: { newRoot: '$courses' } },
+            { $match: query },
+            { $skip: (page - 1) * size },
+            { $limit: size },
+            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+            { $unwind: '$author' },
+            { $project: { name: 1, author: '$author.username', tags: 1, rating: 1, nRatings: 1 } }
+          ]
+        }
+      },
+      { $project: { courses: 1, pages: { $arrayElemAt: [ '$pages.pages', 0 ] } } }
+    ]);
+    return { courses, pages, page };
+  }
+
+  async getFinishedCourses ({ query, page, size }, user) {
+    const [{ pages, courses }] = await User.aggregate([
+      { $match: { _id: user.id } },
+      { $project: { _id: 0, courses: '$courses.finished' } },
+      {
+        $facet: {
+          pages: [
+            {
+              $project: {
+                pages: {
+                  $ceil: { $divide: [ { $size: '$courses' }, size ] }
+                } 
+              }
+            }
+          ],
+          courses: [
+            { $lookup: { from: 'courses', localField: 'courses', 'foreignField': '_id', as: 'courses' } },
+            { $unwind: '$courses' },
+            { $replaceRoot: { newRoot: '$courses' } },
+            { $match: query },
+            { $skip: (page - 1) * size },
+            { $limit: size },
+            { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
+            { $unwind: '$author' },
+            { $project: { name: 1, author: '$author.username', tags: 1, rating: 1, nRatings: 1 } }
+          ]
+        }
+      },
+      { $project: { courses: 1, pages: { $arrayElemAt: [ '$pages.pages', 0 ] } } }
+    ]);
+    return { courses, pages, page };
+  }
+
   async createCourse (name, author, description, tags, chapters) {
     let course = await Course.findOne({ name });
     if (course) throw new ResponseError(400, 'an existing course already has a same name');

@@ -16,6 +16,14 @@ module.exports = router => {
     const { courses, page, pages } = await CourseService.getCourses(paginator, true);
     res.status(200).send({ status: 200, courses, page, pages });
   });
+  router.route('/courses/in-progress').get(authorize(), validate(schemas.getInProgressCourses), paginate('course'), async (req, res) => {
+    const { courses, pages, page } = await CourseService.getInProgressCourses(req.paginator, req.user);
+    res.status(200).send({ status: 200, courses, pages, page });
+  });
+  router.route('/courses/finished').get(authorize(), validate(schemas.getFinishedCourses), paginate('course'), async (req, res) => {
+    const { courses, pages, page } = await CourseService.getFinishedCourses(req.paginator, req.user);
+    res.status(200).send({ status: 200, courses, pages, page });
+  });
   router.route('/courses').post(authorize('teacher'), validate(schemas.createCourse), async (req, res) => {
     const { name, description, tags, chapters } = req.body;
     const author = req.user;

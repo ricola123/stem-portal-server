@@ -17,6 +17,22 @@ module.exports = {
       size: Joi.number().min(1).max(20)
     })
   },
+  getInProgressCourses: {
+    query: Joi.object({
+      search: Joi.string().min(3),
+      tags: Joi.string(),
+      page: Joi.number().min(1),
+      size: Joi.number().min(1).max(20)
+    })
+  },
+  getFinishedCourses: {
+    query: Joi.object({
+      search: Joi.string().min(3),
+      tags: Joi.string(),
+      page: Joi.number().min(1),
+      size: Joi.number().min(1).max(20)
+    })
+  },
   getCourse: {
     params: Joi.object({
       id: Joi.objectId().required()

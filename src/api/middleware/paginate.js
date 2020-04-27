@@ -31,8 +31,8 @@ module.exports = docType => {
     if (docType === 'post' && ['popular'].includes(sort)) paginator.query.createdAt = { $gt: backDate };
     if (search) paginator.query[docType === 'post' ? 'title' : 'name'] = new RegExp(escapeRgx(search), 'gi');
     if (tags) paginator.query.tags = { $in: tags.split(',') };
+    if (sort) paginator.sort = sortOptions[docType][sort];
 
-    paginator.sort = sortOptions[docType][sort];
     req.paginator = paginator;
     next();
   };
