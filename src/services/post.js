@@ -5,6 +5,7 @@ const { ResponseError } = require('../utils');
 
 const mongoose = require('mongoose');
 const _ = require('lodash');
+const sanitize = require('sanitize-html');
 
 class PostService {
 
@@ -28,7 +29,7 @@ class PostService {
     }
 
     async createPost (author, title, content, tags) {
-        const post = new Post({ author: author.id, title, content, tags });
+        const post = new Post({ author: author.id, title, content: sanitize(content), tags });
         await Promise.all([
             TagService.updatePostTags(post._id, tags),
             post.save()
@@ -42,6 +43,7 @@ class PostService {
         if (!post) throw new ResponseError(404, 'post not found');
         if (!updator.id.equals(post.author)) throw new ResponseError(403, 'only authors can update their own posts');
 
+        if (updates.content) updates.content = sanitize(update.content);
         post.set(updates);
         if (updates.tags) {
             await Promise.all([
@@ -76,7 +78,7 @@ class PostService {
         ]);
     }
 
-    async getComments (_postId, _replyId, page, size) {
+    async getComments (_postId, _userId, _replyId, page, size) {
         const post = await Post.findById(_postId)
             .select('-_id comments._id comments.parent');
         if (!post) throw new ResponseError(404, 'post not found');
@@ -85,7 +87,7 @@ class PostService {
         if (!_replyId) {
             count = post.comments.length;
             page = parseInt(page) || 1;
-            comments = await this._getPagedComments(_postId, undefined, page, size);
+            comments = await this._getPagedComments(_postId, _userId, undefined, page, size);
 
         } else {
             _replyId = mongoose.Types.ObjectId(_replyId);
@@ -102,7 +104,7 @@ class PostService {
             }
 
             page = parseInt(page) || Math.floor(skip / size) + 1;
-            ([{ parent, comments }] = await this._getPagedComments(_postId, _commentId, page, size));
+            ([{ parent, comments }] = await this._getPagedComments(_postId, _userId, _commentId, page, size));
         }
 
         comments.forEach(c => { if (_.isEmpty(c.parent)) delete c.parent } );
@@ -121,7 +123,7 @@ class PostService {
         }
 
         const _commentId = mongoose.Types.ObjectId();
-        const comment = { _id: _commentId, author: _userId, parent: _parentId, content };
+        const comment = { _id: _commentId, author: _userId, parent: _parentId, content: sanitize(content) };
 
         const postComment = () => Post.updateOne({ _id: _postId }, { 
             $push: { comments: comment },
@@ -140,7 +142,7 @@ class PostService {
             ...this._base(mongoose.Types.ObjectId(_postId)),
             { $match: { 'comments._id': _commentId } },
             { $replaceRoot: { newRoot: '$comments' } },
-            ...this._countReactions(),
+            ...this._handleReactions(_userId),
             ...this._lookupAuthor(),
             ...this._lookupParent(),
             ...this._projectComment(true)
@@ -155,6 +157,8 @@ class PostService {
         const comment = post.comments.id(_commentId);
         if (!comment) throw new ResponseError(404, 'comment not found');
         if (!updator.id.equals(comment.author)) throw new ResponseError(403, 'only the author can update this comment');
+
+        content = sanitize(content);
         if (comment.content === content) return;
 
         await Post.updateOne({ _id: _postId, 'comments._id': _commentId }, {
@@ -193,7 +197,7 @@ class PostService {
         await Post.updateOne({ _id: _postId, 'comments._id': _commentId }, operations);
     }
 
-    _getPagedComments (_postId, _commentId, page, size) {
+    _getPagedComments (_postId, _userId, _commentId, page, size) {
         return _commentId
         ? Post.aggregate([
             ...this._base(mongoose.Types.ObjectId(_postId)),
@@ -202,7 +206,7 @@ class PostService {
                     parent: [
                         { $match: { 'comments._id': _commentId } },
                         { $replaceRoot: { newRoot: '$comments' } },
-                        ...this._countReactions(),
+                        ...this._handleReactions(_userId),
                         ...this._lookupAuthor(),
                         ...this._projectComment(false)
                     ],
@@ -210,7 +214,7 @@ class PostService {
                         { $match: { 'comments.parent': _commentId } },
                         ...this._paginate(page, size),
                         { $replaceRoot: { newRoot: '$comments' } },
-                        ...this._countReactions(),
+                        ...this._handleReactions(_userId),
                         ...this._lookupAuthor(),
                         ...this._projectComment(false)
                     ]
@@ -222,7 +226,7 @@ class PostService {
             ...this._base(mongoose.Types.ObjectId(_postId)),
             ...this._paginate(page, size),
             { $replaceRoot: { newRoot: '$comments' } },
-            ...this._countReactions(),
+            ...this._handleReactions(_userId),
             ...this._lookupAuthor(),
             ...this._lookupParent(),
             ...this._projectComment(true)
@@ -239,7 +243,7 @@ class PostService {
                         { $unwind: { path: '$comments', includeArrayIndex: 'comments.floor' } },
                         ...this._paginate(1, size),
                         { $replaceRoot: { newRoot: '$comments' } },
-                        ...this._countReactions(),
+                        ...this._handleReactions(_userId),
                         ...this._lookupAuthor(),
                         ...this._lookupParent(),
                         ...this._projectComment(true)
@@ -279,8 +283,16 @@ class PostService {
         ];
     }
 
-    _countReactions () {
-        return [ { $set: { nLikes: { $size: '$likes' }, nDislikes: { $size: '$dislikes' } } } ]
+    _handleReactions (_userId) {
+        const operation = {
+          nLikes: { $size: '$likes' },
+          nDislikes: { $size: '$dislikes' },
+        };
+        if (_userId) {
+          operation.liked = { $in: [ _userId, '$likes' ] };
+          operation.disliked = { $in: [ _userId, '$dislikes' ] }
+        }
+        return [ { $set: operation } ];
     }
 
     _lookupAuthor () {
@@ -306,7 +318,7 @@ class PostService {
     _projectComment (showParent, keepFloor) {
         const base = {
             $project: { author: { _id: 1, username: 1, type: 1 }, floor: { $add: [ '$floor', keepFloor ? 0 : 2 ] },
-            content: 1, nLikes: 1, nDislikes: 1, nComments: 1, updatedAt: 1, createdAt: 1 }
+            content: 1, nLikes: 1, nDislikes: 1, liked: 1, disliked: 1, nComments: 1, updatedAt: 1, createdAt: 1 }
         };
         if (showParent) {
             base.$project.parent = { _id: 1, content: 1 };

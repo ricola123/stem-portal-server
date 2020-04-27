@@ -40,10 +40,10 @@ module.exports = router => {
         await PostService.reactPost(req.user.id, _postId, liked, disliked);
         res.status(204).send();
     });
-    router.route('/forum/posts/:id/comments').get(validate(schemas.getComments), async (req, res) => {
-        const _postId = req.params.id;
+    router.route('/forum/posts/:id/comments').get(authorize('optional'), validate(schemas.getComments), async (req, res) => {
         const { reply, page, size = 10 } = req.query;
-        const { comments, page: resPage, pages, parent } = await PostService.getComments(_postId, reply, page, size);
+        const _userId = req.user ? req.user.id : undefined;
+        const { comments, page: resPage, pages, parent } = await PostService.getComments(req.params.id, _userId, reply, page, size);
         res.status(200).send({ status: 200, parent, comments, page: resPage, pages });
     });
     router.route('/forum/posts/:id/comments').post(authorize(), validate(schemas.createComment), async (req, res) => {
