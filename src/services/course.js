@@ -52,7 +52,7 @@ class CourseService {
             { $limit: size },
             { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
             { $unwind: '$author' },
-            { $project: { name: 1, author: '$author.username', tags: 1, rating: 1, nRatings: 1 } }
+            { $project: { _id: 0, id: '$_id', name: 1, author: '$author.username', tags: 1, rating: 1, nRatings: 1 } }
           ]
         }
       },
@@ -85,7 +85,7 @@ class CourseService {
             { $limit: size },
             { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'author' } },
             { $unwind: '$author' },
-            { $project: { name: 1, author: '$author.username', tags: 1, rating: 1, nRatings: 1 } }
+            { $project: { _id: 0, id: '$_id', name: 1, author: '$author.username', tags: 1, rating: 1, nRatings: 1 } }
           ]
         }
       },
