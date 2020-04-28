@@ -21,7 +21,12 @@ const tagSchema = new Schema({
     ref: 'Post',
     unique: false
   }],
-  references: {
+  courseReferences: {
+    type: 'Number',
+    required: false,
+    default: 0
+  },
+  postReferences: {
     type: 'Number',
     required: false,
     default: 0
