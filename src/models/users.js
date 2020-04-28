@@ -14,6 +14,11 @@ const myCourseSchema = new Schema({
     type: Schema.Types.ObjectId,
     unique: false,
     ref: 'Course'
+  }],
+  rated: [{
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'Course'
   }]
 }, { _id: false });
 
