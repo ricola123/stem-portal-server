@@ -61,11 +61,11 @@ class TagService {
   }
 
   getCourseTags () {
-    return Tag.find({ courseReferences: { $gt: 0 } }).select('name, courseReferences');
+    return Tag.find({ courseReferences: { $gt: 0 } }).select('name courseReferences');
   }
 
-  getCourseTags () {
-    return Tag.find({ postReferences: { $gt: 0 } }).select('name, postReferences');
+  getPostTags () {
+    return Tag.find({ postReferences: { $gt: 0 } }).select('name postReferences');
   }
 }
 
