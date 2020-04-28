@@ -182,16 +182,23 @@ class CourseService {
       course.score -= (prevRating.score - score);
       prevRating.score = score;
       prevRating.comment = comment;
+
+      const prevRatingInUser = rater.courses.ratings.find(rating => rating._courseId.equals(_courseId));
+      if (prevRatingInUser) {
+        prevRatingInUser.score = score;
+        prevRatingInUser.comment = comment;
+      }
     } else {
       if (prevRating) throw new ResponseError(400, 'rating already exists, send a put request instead');
       course.score += score;
       course.nRatings += 1;
       course.ratings.push({ _userId: _raterId, score, comment });
+      rater.courses.ratings.push({ _courseId, score, comment });
     }
 
     const ratingAvg = course.score / (course.nRatings || 1) || 3.5;
     course.rating = Math.round(ratingAvg * 10) / 10;
-    await course.save();
+    await Promise.all([ course.save(), rater.save() ]);
   }
 
   async deleteRating (_courseId, _deleterId) {
@@ -210,7 +217,16 @@ class CourseService {
 
         const ratingAvg = course.score / (course.nRatings || 1) || 3.5;
         course.rating = Math.round(ratingAvg * 10) / 10;
-        await course.save();
+
+        const ratingsInUser = deleter.courses.ratings
+        for (let j = 0; j < ratingsInUser.length; j++) {
+          if (ratingsInUser[j]._courseId.equals(_courseId)) {
+            ratingsInUser.splice(j, 1);
+            break;
+          }
+        }
+
+        await Promise.all([ course.save(), deletor.save() ]);
 
         return;
       }
