@@ -211,7 +211,7 @@ class CourseService {
 
     for (let i = 0; i < course.ratings.length; i++) {
       if (course.ratings[i]._userId.equals(_deleterId)) {
-        const deleted = course.ratings.splice(i, 1);
+        const [deleted] = course.ratings.splice(i, 1);
         course.score -= deleted.score;
         course.nRatings -= 1;
 
@@ -226,7 +226,7 @@ class CourseService {
           }
         }
 
-        await Promise.all([ course.save(), deletor.save() ]);
+        await Promise.all([ course.save(), deleter.save() ]);
 
         return;
       }

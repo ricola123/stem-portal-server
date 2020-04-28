@@ -17,7 +17,7 @@ const ratingSchema = new Schema({
     type: 'String',
     required: true
   }
-}, { timestamps: true });
+}, { timestamps: true, _id: false });
 
 const courseSchema = new Schema({
   name: {
