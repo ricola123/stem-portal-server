@@ -10,9 +10,11 @@ class CourseService {
     return await Course.findOne({ name });
   }
   
-  async getCourses (paginator, published) {
+  async getCourses (paginator, _authorId) {
     const { query, sort, page, size } = paginator;
-    if (published) query.published = published;
+
+    if (_authorId) query.author = _authorId
+    query.published = !_authorId;
 
     const [courses, count] = await Promise.all([
       Course.find(query)
@@ -59,6 +61,10 @@ class CourseService {
       { $project: { courses: 1, pages: { $arrayElemAt: [ '$pages.pages', 0 ] } } }
     ]);
     return { courses, pages, page };
+  }
+
+  async getTeachingCourses ({ query, page, size }, user) {
+
   }
 
   async getFinishedCourses ({ query, page, size }, user) {

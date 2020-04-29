@@ -13,11 +13,15 @@ module.exports = router => {
   });
   router.route('/courses').get(validate(schemas.getCourses), paginate('course'), async (req, res) => {
     const paginator = req.paginator;
-    const { courses, page, pages } = await CourseService.getCourses(paginator, true);
+    const { courses, page, pages } = await CourseService.getCourses(paginator);
     res.status(200).send({ status: 200, courses, page, pages });
   });
   router.route('/courses/in-progress').get(authorize(), validate(schemas.getInProgressCourses), paginate('course'), async (req, res) => {
     const { courses, pages, page } = await CourseService.getInProgressCourses(req.paginator, req.user);
+    res.status(200).send({ status: 200, courses, pages, page });
+  });
+  router.route('/courses/teaching').get(authorize('teacher'), validate(schemas.getTeachingCourses), paginate('course'), async (req, res) => {
+    const { courses, pages, page } = await CourseService.getCourses(req.paginator, req.user.id);
     res.status(200).send({ status: 200, courses, pages, page });
   });
   router.route('/courses/finished').get(authorize(), validate(schemas.getFinishedCourses), paginate('course'), async (req, res) => {

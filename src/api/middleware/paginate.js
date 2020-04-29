@@ -7,7 +7,7 @@ const sortOptions = {
   course: {
     latest: { updatedAt: -1 },
     rating: { rating: -1, score: -1, updatedAt: -1 },
-    popular: { nComments: -1, updatedAt: -1 }
+    popular: { nRating: -1, updatedAt: -1 }
   },
   post: {
     latest: { updatedAt: -1 },

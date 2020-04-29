@@ -25,6 +25,14 @@ module.exports = {
       size: Joi.number().min(1).max(20)
     })
   },
+  getTeachingCourses: {
+    query: Joi.object({
+      search: Joi.string().min(3),
+      tags: Joi.string(),
+      page: Joi.number().min(1),
+      size: Joi.number().min(1).max(20)
+    })
+  },
   getFinishedCourses: {
     query: Joi.object({
       search: Joi.string().min(3),
