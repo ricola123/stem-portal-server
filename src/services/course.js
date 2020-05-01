@@ -66,10 +66,6 @@ class CourseService {
     return { courses, pages, page };
   }
 
-  async getTeachingCourses ({ query, page, size }, user) {
-
-  }
-
   async getFinishedCourses ({ query, page, size }, user) {
     const [{ pages, courses }] = await User.aggregate([
       { $match: { _id: user.id } },
