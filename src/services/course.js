@@ -13,8 +13,11 @@ class CourseService {
   async getCourses (paginator, _authorId) {
     const { query, sort, page, size } = paginator;
 
-    if (_authorId) query.author = _authorId
-    query.published = !_authorId;
+    if (_authorId) {
+      query.author = _authorId
+    } else {
+      query.published = true;
+    }
 
     const [courses, count] = await Promise.all([
       Course.find(query)
