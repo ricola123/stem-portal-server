@@ -11,7 +11,7 @@ module.exports = router => {
     res.status(200).send({ status: 200, tags });
   });
   router.route('/tags/posts').get(async (req, res) => {
-    const tags = await TagService.getpostTags();
+    const tags = await TagService.getPostTags();
     res.status(200).send({ status: 200, tags });
   });
 };

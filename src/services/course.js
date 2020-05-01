@@ -124,8 +124,7 @@ class CourseService {
   }
 
   async updateCourse (_id, name, updator, description, tags, chapters) {
-    const course = await Course.findById(_id)
-      .select('-__v -_id');
+    const course = await Course.findById(_id);
     if (!course) throw new ResponseError(404, 'course not found');
     if (!updator.id.equals(course.author)) throw new ResponseError(403, 'forbidden');
     
