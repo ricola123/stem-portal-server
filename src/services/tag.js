@@ -25,7 +25,7 @@ class TagService {
   }
 
   async deRegisterCourseTags (_courseId, tags) {
-    await Tag.updateMany({ name: { $in: tags } }, { $pull: { courses: _courseId } });
+    await Tag.updateMany({ name: { $in: tags } }, { $pull: { courses: _courseId }, $inc: { courseReferences: -1 } });
     await Tag.deleteMany({ courseReferences: 0, postReferences: 0 });
   }
 
@@ -52,7 +52,7 @@ class TagService {
   }
 
   async deRegisterPostTags (_postId, tags) {
-    await Tag.updateMany({ name: { $in: tags } }, { $pull: { posts: _postId } });
+    await Tag.updateMany({ name: { $in: tags } }, { $pull: { posts: _postId }, $inc: { postReferences: -1 } });
     await Tag.deleteMany({ postReferences: 0, postReferences: 0 });
   }
 
