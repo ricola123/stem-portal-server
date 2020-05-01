@@ -62,7 +62,7 @@ class PostService {
 
         await Promise.all([
             Post.deleteOne({ _id: _postId }),
-            TagService.deRegisterPostTags(_postId)
+            TagService.deRegisterPostTags(_postId, post.tags)
         ]);
     }
 

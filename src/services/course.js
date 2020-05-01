@@ -159,7 +159,7 @@ class CourseService {
 
     await Promise.all([
       Course.findByIdAndDelete(_id),
-      TagService.deRegisterCourseTags(_id)
+      TagService.deRegisterCourseTags(_id, course.tags)
     ]);
   }
 
