@@ -2,6 +2,7 @@ const Course = require('../models/courses');
 const User = require('../models/users');
 
 const TagService = require('../services/tag');
+const UserService = require('../services/user');
 const { ResponseError } = require('../utils');
 
 class CourseService {
@@ -140,6 +141,7 @@ class CourseService {
     if (!publisher.id.equals(course.author)) throw new ResponseError(403, 'forbidden');
 
     course.published = true;
+    await UserService.updateMeterEXP(publisher.id, 'publishCourse');
     await course.save();
   }
 

@@ -37,6 +37,50 @@ class UserService {
     user.password = await AuthService.hashPassword(newPassword);
     await user.save();
   }
+
+  async updateMeterEXP (user_id, action) {
+    const user = await User.findById(user_id);
+    if (!user) throw new ResponseError(400, 'user not found');
+
+    if (user.type === 'teacher') {
+      switch (action) {
+        case 'createPost':
+          user.meterEXP += 20;
+          break;
+        case 'replyPost':
+          user.meterEXP += 10;
+          break;
+        case 'publishCourse':
+          user.meterEXP += 50;
+          break;
+      }
+    } else if (user.type === 'parent') {
+      switch (action) {
+        case 'createPost':
+          user.meterEXP += 20;
+          break;
+        case 'replyPost':
+          user.meterEXP += 10;
+          break;
+      }
+    } else if (user.type === 'student') {
+      switch (action) {
+        case 'playMagicCube':
+          user.meterEXP += 30;
+          break;
+        case 'playSolveThem':
+          user.meterEXP += 10;
+          break;
+        case 'createPost':
+          user.meterEXP += 10;
+          break;
+        case 'replyPost':
+          user.meterEXP += 5;
+          break;
+      }
+    }
+    await user.save();
+  }
 }
 
 module.exports = new UserService();

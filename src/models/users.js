@@ -70,7 +70,12 @@ const userSchema = new Schema({
     type: 'String',
     trim: true
   }],
-  courses: myCourseSchema
+  courses: myCourseSchema,
+  meterEXP: {
+    type: 'Number',
+    default: 0,
+    trim: true
+  }
 });
 
 // encrypt password before save
