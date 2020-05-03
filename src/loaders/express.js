@@ -28,6 +28,7 @@ module.exports = async app => {
 
   // error handler middleware
   app.use((err, req, res, next) => {
+    console.log(err)
     switch (err.name) {
       case 'ValidationError':
       case 'JsonWebTokenError':
@@ -38,7 +39,6 @@ module.exports = async app => {
         break;
       default: //Internal server error
         res.status(500).send({ status: 500, error: 'internal server error' });
-        console.log(err);
     }
     next();
   });
