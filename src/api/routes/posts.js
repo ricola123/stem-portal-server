@@ -25,7 +25,7 @@ module.exports = router => {
     });
     router.route('/forum/posts/:id').patch(authorize(), validate(schemas.updatePost), async (req, res) => {
         const _postId = req.params.id;
-        await PostService.updatePost(req.user.id, _postId, req.body);
+        await PostService.updatePost(req.user, _postId, req.body);
         res.status(204).send();
     });
     router.route('/forum/posts/:id').delete(authorize(), validate(schemas.deletePost), async (req, res) => {
