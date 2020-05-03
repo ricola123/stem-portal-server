@@ -34,16 +34,21 @@ module.exports = router => {
     const course = await CourseService.createCourse(name, author, description, tags, JSON.stringify(chapters));
     res.status(201).send({ status: 201, course });
   });
-  router.route('/courses/:id').get(validate(schemas.getCourse), async (req, res) => {
+  router.route('/courses/:id').get(authorize('optional'), validate(schemas.getCourse), async (req, res) => {
     const { id } = req.params;
-    const course = await CourseService.getCourse(id);
-    res.status(200).send({ status: 200, course });
+    const course = await CourseService.getCourse(id, req.user);
+    res.status(200).send({ status: 200, ...course });
   });
   router.route('/courses/:id').put(authorize('teacher'), validate(schemas.updateCourse), async (req, res) => {
     const { id } = req.params;
     const { name, description, tags, chapters } = req.body;
     const updator = req.user;
     await CourseService.updateCourse(id, name, updator, description, tags, JSON.stringify(chapters));
+    res.status(204).send();
+  });
+  router.route('/courses/:id/progress').put(authorize(), validate(schemas.updateCourseProgress), async (req, res) => {
+    const { id } = req.params;
+    await CourseService.updateCourseProgress(id, req.user, req.body.progress);
     res.status(204).send();
   });
   router.route('/courses/:id/publish').post(authorize('teacher'), validate(schemas.publishCourse), async (req, res) => {

@@ -1,5 +1,6 @@
 const Post = require('../models/posts');
 
+const UserService = require('../services/user')
 const TagService = require('../services/tag');
 const { ResponseError } = require('../utils');
 
@@ -32,7 +33,8 @@ class PostService {
         const post = new Post({ author: author.id, title, content: sanitize(content), tags });
         await Promise.all([
             TagService.updatePostTags(post._id, tags),
-            post.save()
+            post.save(),
+            UserService.updateMeterEXP(author.id, 'createPost')
         ]);
         return { _id: post._id, author: post.author, title, content, tags };
     }
@@ -62,7 +64,7 @@ class PostService {
 
         await Promise.all([
             Post.deleteOne({ _id: _postId }),
-            TagService.deRegisterPostTags(_postId)
+            TagService.deRegisterPostTags(_postId, post.tags)
         ]);
     }
 
@@ -137,6 +139,8 @@ class PostService {
         const result = await (_parentId ? Promise.all([postComment(), updateParent()]) : postComment());
         const success = result.nModified || Array.isArray(result) && result.every(r => !!r.nModified);
         if (!success) throw new ResponseError(400, 'failed to create comment');
+
+        UserService.updateMeterEXP(_userId, 'replyPost');
 
         return (await Post.aggregate([
             ...this._base(mongoose.Types.ObjectId(_postId)),

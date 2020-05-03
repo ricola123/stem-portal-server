@@ -6,9 +6,16 @@ const Schema = mongoose.Schema;
 
 const myCourseSchema = new Schema({
   inProgress: [{
-    type: Schema.Types.ObjectId,
-    unique: false,
-    ref: 'Course'
+    _courseId: {
+      type: Schema.Types.ObjectId,
+      unique: false,
+      ref: 'Course',
+    },
+    progress: {
+      type: Schema.Types.Mixed,
+      default: {},
+      required: true
+    }
   }],
   finished: [{
     type: Schema.Types.ObjectId,
@@ -70,7 +77,12 @@ const userSchema = new Schema({
     type: 'String',
     trim: true
   }],
-  courses: myCourseSchema
+  courses: myCourseSchema,
+  meterEXP: {
+    type: 'Number',
+    default: 0,
+    trim: true
+  }
 });
 
 // encrypt password before save

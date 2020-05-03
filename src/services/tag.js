@@ -21,12 +21,12 @@ class TagService {
       }
     };
     await Tag.bulkWrite([ ...saveTagOperations, removeTagOperation ]);
-    await Tag.deleteMany({ courseReferences: 0 });
+    await Tag.deleteMany({ courseReferences: 0, postReferences: 0 });
   }
 
-  async deRegisterCourseTags (_courseId) {
-    await Tag.updateMany({ courses: _courseId }, { $pull: { courses: _courseId } });
-    await Tag.deleteMany({ courseReferences: 0 });
+  async deRegisterCourseTags (_courseId, tags) {
+    await Tag.updateMany({ name: { $in: tags } }, { $pull: { courses: _courseId }, $inc: { courseReferences: -1 } });
+    await Tag.deleteMany({ courseReferences: 0, postReferences: 0 });
   }
 
   async updatePostTags (_postId, tags) {
@@ -48,12 +48,12 @@ class TagService {
       }
     };
     await Tag.bulkWrite([ ...saveTagOperations, removeTagOperation ]);
-    await Tag.deleteMany({ postReferences: 0 });
+    await Tag.deleteMany({ postReferences: 0, postReferences: 0 });
   }
 
-  async deRegisterPostTags (_postId) {
-    await Tag.updateMany({ posts: _postId }, { $pull: { posts: _postId } });
-    await Tag.deleteMany({ postReferences: 0 });
+  async deRegisterPostTags (_postId, tags) {
+    await Tag.updateMany({ name: { $in: tags } }, { $pull: { posts: _postId }, $inc: { postReferences: -1 } });
+    await Tag.deleteMany({ postReferences: 0, postReferences: 0 });
   }
 
   getTags () {

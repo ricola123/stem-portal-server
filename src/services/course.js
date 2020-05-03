@@ -2,6 +2,7 @@ const Course = require('../models/courses');
 const User = require('../models/users');
 
 const TagService = require('../services/tag');
+const UserService = require('../services/user');
 const { ResponseError } = require('../utils');
 
 class CourseService {
@@ -13,8 +14,11 @@ class CourseService {
   async getCourses (paginator, _authorId) {
     const { query, sort, page, size } = paginator;
 
-    if (_authorId) query.author = _authorId
-    query.published = !_authorId;
+    if (_authorId) {
+      query.author = _authorId
+    } else {
+      query.published = true;
+    }
 
     const [courses, count] = await Promise.all([
       Course.find(query)
@@ -46,7 +50,7 @@ class CourseService {
             }
           ],
           courses: [
-            { $lookup: { from: 'courses', localField: 'courses', 'foreignField': '_id', as: 'courses' } },
+            { $lookup: { from: 'courses', localField: 'courses._courseId', 'foreignField': '_id', as: 'courses' } },
             { $unwind: '$courses' },
             { $replaceRoot: { newRoot: '$courses' } },
             { $match: query },
@@ -61,10 +65,6 @@ class CourseService {
       { $project: { courses: 1, pages: { $arrayElemAt: [ '$pages.pages', 0 ] } } }
     ]);
     return { courses, pages, page };
-  }
-
-  async getTeachingCourses ({ query, page, size }, user) {
-
   }
 
   async getFinishedCourses ({ query, page, size }, user) {
@@ -111,7 +111,7 @@ class CourseService {
     return await this.getCourse(course._id);
   }
 
-  async getCourse (_id) {
+  async getCourse (_id, user) {
     const course = await Course.findOne({ _id })
       .populate({ path: 'author', select: 'username email school firstName lastName' })
       .select('-score -nRatings -__v')
@@ -120,12 +120,19 @@ class CourseService {
 
     if (!course.author) course.author = 'account removed';
     course.chapters = JSON.parse(course.chapters);
-    return course;
+
+    if (user) {
+      const courseTaker = await User.findById(user.id);
+      const courseRecord = courseTaker.courses.inProgress.find(({ _courseId }) => _courseId && _courseId.equals(_id));
+      if (courseRecord && courseRecord.progress) {
+        return { course, progress: courseRecord.progress }
+      }
+    }
+    return { course };
   }
 
   async updateCourse (_id, name, updator, description, tags, chapters) {
-    const course = await Course.findById(_id)
-      .select('-__v -_id');
+    const course = await Course.findById(_id);
     if (!course) throw new ResponseError(404, 'course not found');
     if (!updator.id.equals(course.author)) throw new ResponseError(403, 'forbidden');
     
@@ -136,12 +143,25 @@ class CourseService {
     ]);
   }
 
+  async updateCourseProgress (_id, user, progress) {
+    const courseTaker = await User.findById(user.id);
+    if (!courseTaker) throw new ResponseError(404, 'user not found');
+
+    const targetCourse = courseTaker.courses.inProgress.find(({ _courseId }) => _courseId && _courseId.equals(_id));
+    targetCourse
+      ? targetCourse.progress = progress
+      : courseTaker.courses.inProgress.push({ _courseId: _id, progress });
+
+    await courseTaker.save();
+  }
+
   async publishCourse (_id, publisher) {
     const course = await Course.findById(_id);
     if (!course) throw new ResponseError(404, 'course not found');
     if (!publisher.id.equals(course.author)) throw new ResponseError(403, 'forbidden');
 
     course.published = true;
+    await UserService.updateMeterEXP(publisher.id, 'publishCourse');
     await course.save();
   }
 
@@ -161,7 +181,7 @@ class CourseService {
 
     await Promise.all([
       Course.findByIdAndDelete(_id),
-      TagService.deRegisterCourseTags(_id)
+      TagService.deRegisterCourseTags(_id, course.tags)
     ]);
   }
 
