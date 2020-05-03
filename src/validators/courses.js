@@ -63,6 +63,9 @@ module.exports = {
       chapters: Joi.array().required()
     })
   },
+  updateCourseProgress: {
+    params: Joi.object({ id: Joi.objectId().required() })
+  },
   publishCourse: {
     params: Joi.object({ id: Joi.objectId().required() })
   },

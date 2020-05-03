@@ -43,7 +43,7 @@ class PostService {
         if (!post) throw new ResponseError(404, 'post not found');
         if (!updator.id.equals(post.author)) throw new ResponseError(403, 'only authors can update their own posts');
 
-        if (updates.content) updates.content = sanitize(update.content);
+        if (updates.content) updates.content = sanitize(updates.content);
         post.set(updates);
         if (updates.tags) {
             await Promise.all([

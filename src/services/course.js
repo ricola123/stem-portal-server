@@ -49,7 +49,7 @@ class CourseService {
             }
           ],
           courses: [
-            { $lookup: { from: 'courses', localField: 'courses', 'foreignField': '_id', as: 'courses' } },
+            { $lookup: { from: 'courses', localField: 'courses._courseId', 'foreignField': '_id', as: 'courses' } },
             { $unwind: '$courses' },
             { $replaceRoot: { newRoot: '$courses' } },
             { $match: query },
@@ -110,7 +110,7 @@ class CourseService {
     return await this.getCourse(course._id);
   }
 
-  async getCourse (_id) {
+  async getCourse (_id, user) {
     const course = await Course.findOne({ _id })
       .populate({ path: 'author', select: 'username email school firstName lastName' })
       .select('-score -nRatings -__v')
@@ -119,7 +119,15 @@ class CourseService {
 
     if (!course.author) course.author = 'account removed';
     course.chapters = JSON.parse(course.chapters);
-    return course;
+
+    if (user) {
+      const courseTaker = await User.findById(user.id);
+      const courseRecord = courseTaker.courses.inProgress.find(({ _courseId }) => _courseId && _courseId.equals(_id));
+      if (courseRecord && courseRecord.progress) {
+        return { course, progress: courseRecord.progress }
+      }
+    }
+    return { course };
   }
 
   async updateCourse (_id, name, updator, description, tags, chapters) {
@@ -132,6 +140,18 @@ class CourseService {
       TagService.updateCourseTags(course._id, tags),
       course.save()
     ]);
+  }
+
+  async updateCourseProgress (_id, user, progress) {
+    const courseTaker = await User.findById(user.id);
+    if (!courseTaker) throw new ResponseError(404, 'user not found');
+
+    const targetCourse = courseTaker.courses.inProgress.find(({ _courseId }) => _courseId && _courseId.equals(_id));
+    targetCourse
+      ? targetCourse.progress = progress
+      : courseTaker.courses.inProgress.push({ _courseId: _id, progress });
+
+    await courseTaker.save();
   }
 
   async publishCourse (_id, publisher) {
