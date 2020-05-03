@@ -35,4 +35,16 @@ module.exports = router => {
     await UserService.updatePassword(id, password, newPassword);
     res.status(204).send();
   });
+  router.route('/users/update/:username').post(validate(schemas.updateUser), async (req, res) => {
+    const { username } = req.params;
+    const { email, firstName, lastName, school, interests } = req.body;
+    await UserService.updateUser(username, email, firstName, lastName, school, interests);
+    res.status(204).send();
+  })
+  router.route('/users/update-with-password/:username').post(validate(schemas.updateUserWithPassword), async (req, res) => {
+    const { username } = req.params;
+    const { password, email, firstName, lastName, school, interests } = req.body;
+    await UserService.updateUserWithPassword(username, password, email, firstName, lastName, school, interests);
+    res.status(204).send();
+  })
 };

@@ -38,6 +38,31 @@ class UserService {
     await user.save();
   }
 
+  async updateUser (username, email, firstName, lastName, school, interests) {
+    const user = await User.findOne({ username });
+    if (!user) throw new ResponseError(400, 'user not found');
+
+    user.email = email;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.school = school;
+    user.interests = interests;
+    await user.save();
+  }
+
+  async updateUserWithPassword (username, password, email, firstName, lastName, school, interests) {
+    const user = await User.findOne({ username });
+    if (!user) throw new ResponseError(400, 'user not found');
+    
+    user.password = await AuthService.hashPassword(password);
+    user.email = email;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.school = school;
+    user.interests = interests;
+    await user.save();
+  }
+
   async updateMeterEXP (user_id, action) {
     const user = await User.findById(user_id);
     if (!user) throw new ResponseError(400, 'user not found');
