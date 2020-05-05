@@ -162,7 +162,7 @@ class CourseService {
     if (!publisher.id.equals(course.author)) throw new ResponseError(403, 'forbidden');
 
     course.published = true;
-    course.publishedAt = Date.now;
+    course.publishedAt = new Date;
     await UserService.updateMeterEXP(publisher.id, 'publishCourse');
     await course.save();
   }

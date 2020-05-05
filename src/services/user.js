@@ -154,7 +154,7 @@ class UserService {
       .findById(_userId)
       .select('following lastUpdateCheck')
       .lean();
-    
+
     const [ posts, courses ] = await Promise.all([
       Post.find({ author: { $in: following }, createdAt: { $gte: lastUpdateCheck } }),
       Course.find({ author: { $in: following }, published: true, publishedAt: { $gte: lastUpdateCheck } })
