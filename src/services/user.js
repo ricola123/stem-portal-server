@@ -161,24 +161,26 @@ class UserService {
     ]);
     
     const recentUpdatesByUser = {};
-    posts.forEach(post => {
+    posts.forEach(({ _id, title: name, content, tags, createdAt: timestamp }) => {
       const newPost = {
-        name: post.title,
-        content: post.content,
-        tags: post.tags,
-        timestamp: post.createdAt,
+        _id,
+        name,
+        content,
+        tags,
+        timestamp,
         type: 'Post'
       };
       recentUpdatesByUser[post.author]
         ? recentUpdatesByUser[post.author].push(newPost)
         : recentUpdatesByUser[post.author] = [ newPost ]
     });
-    courses.forEach(course => {
+    courses.forEach(({ _id, name, description: content, tags, publishedAt: timestamp }) => {
       const newCourse = {
-        name: course.name,
-        content: course.description,
-        tags: course.tags,
-        timestamp: course.publishedAt,
+        _id,
+        name,
+        content,
+        tags,
+        timestamp,
         type: 'Course'
       };
       recentUpdatesByUser[course.author] 
