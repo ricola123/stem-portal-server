@@ -150,7 +150,7 @@ class UserService {
   }
 
   async getUpdates (_userId) {
-    const { _id, following, lastUpdateCheck } = await User
+    const { following, lastUpdateCheck } = await User
       .findById(_userId)
       .select('following lastUpdateCheck')
       .lean();
@@ -160,7 +160,45 @@ class UserService {
       Course.find({ author: { $in: following }, published: true, publishedAt: { $gte: lastUpdateCheck } })
     ]);
     
-    return [posts, courses];
+    const recentUpdatesByUser = {};
+    posts.forEach(post => {
+      const newPost = {
+        name: post.title,
+        content: post.content,
+        tags: post.tags,
+        timestamp: post.createdAt
+      };
+      recentUpdatesByUser[post.author]
+        ? recentUpdatesByUser[post.author].push(newPost)
+        : recentUpdatesByUser[post.author] = [ newPost ]
+    });
+    courses.forEach(course => {
+      const newCourse = {
+        name: course.name,
+        content: course.description,
+        tags: course.tags,
+        timestamp: course.publishedAt
+      };
+      recentUpdatesByUser[course.author] 
+        ? recentUpdatesByUser[course.author].push(newCourse)
+        : recentUpdatesByUser[course.author]  = [ newCourse ]
+    });
+
+    const userDetails = await User
+      .find({ _id: Object.keys(recentUpdatesByUser) })
+      .select('username avatar')
+      .lean();
+    
+    const recentUpdates = userDetails.map(({ _id, username, avatar }) => ({
+      _id,
+      username,
+      avatar,
+      activities: recentUpdatesByUser[_id]
+    }));
+
+    await User.updateOne({ _id: _userId }, { lastUpdateCheck: new Date });
+
+    return recentUpdates;
   }
 }
 
