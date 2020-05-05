@@ -106,6 +106,14 @@ class UserService {
     }
     await user.save();
   }
+
+  async updateUserMeterLevel (userId, level) {
+    const user = await User.findById(userId);
+    if (!user) throw new ResponseError(400, 'user not found');
+
+    user.meterLevel = level;
+    await user.save()
+  }
 }
 
 module.exports = new UserService();
