@@ -114,6 +114,47 @@ class UserService {
     user.meterLevel = level;
     await user.save()
   }
+
+  async followUser (_requestorId, _targetId) {
+    const [ target, self ] = await Promise.all([
+      User.updateOne(
+        { _id: _targetId },
+        { $addToSet: { followers: _requestorId } }
+      ),
+      User.updateOne(
+        { _id: _requestorId },
+        { $addToSet: { following: _targetId } }
+      )
+    ]);
+    if (!target.nModified || !self.nModified) {
+      throw new ResponseError(400, 'cannot follow user');
+    }
+  }
+
+  async unfollowUser (_requestorId, _targetId) {
+    const [ target, self ] = await Promise.all([
+      User.updateOne(
+        { _id: _targetId },
+        { $pull: { followers: _requestorId } }
+      ),
+      User.updateOne(
+        { _id: _requestorId },
+        { $pull: { following: _targetId } }
+      )
+    ]);
+    if (!target.nModified || !self.nModified) {
+      throw new ResponseError(400, 'cannot unfollow user');
+    }
+  }
+
+  async getUpdates (_userId) {
+    const user = await User
+      .findById(_userId)
+      .select('following lastUpdateCheck')
+      .lean();
+    console.log(user)
+    return []
+  }
 }
 
 module.exports = new UserService();

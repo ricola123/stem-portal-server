@@ -13,6 +13,10 @@ module.exports = router => {
     const user = await UserService.getUser(id);
     res.status(200).send({ status: 200, user });
   });
+  router.route('/user/updates').get(authorize(), async (req, res) => {
+    const activities = await UserService.getUpdates(req.user.id);
+    res.status(200).send({ status: 200, activities });
+  });
   router.route('/users').post(validate(schemas.register), async (req, res) => {
     const { username, password, email, resend } = req.body;
     if (resend) {
@@ -35,23 +39,31 @@ module.exports = router => {
     await UserService.updatePassword(id, password, newPassword);
     res.status(204).send();
   });
+  router.route('/users/:targetId/followers').post(authorize(), validate(schemas.followUser), async (req, res) => {
+    await UserService.followUser(req.user.id, req.params.targetId);
+    res.status(204).send();
+  });
+  router.route('/users/:targetId/followers').put(authorize(), validate(schemas.followUser), async (req, res) => {
+    await UserService.unfollowUser(req.user.id, req.params.targetId);
+    res.status(204).send();
+  });
   router.route('/users/update/:username').post(validate(schemas.updateUser), async (req, res) => {
     const { username } = req.params;
     const { email, firstName, lastName, school, interests } = req.body;
     await UserService.updateUser(username, email, firstName, lastName, school, interests);
     res.status(204).send();
-  })
+  });
   router.route('/users/update-with-password/:username').post(validate(schemas.updateUserWithPassword), async (req, res) => {
     const { username } = req.params;
     const { password, email, firstName, lastName, school, interests } = req.body;
     await UserService.updateUserWithPassword(username, password, email, firstName, lastName, school, interests);
     res.status(204).send();
-  })
+  });
   router.route('/users/:userId/update-level').post(authorize(), validate(schemas.updateUserMeterLevel), async (req, res) => {
     const { userId } = req.params;
     const { level } = req.body;
     console.log(userId, level)
     await UserService.updateUserMeterLevel(userId, level);
     res.status(204).send();
-  })
+  });
 };

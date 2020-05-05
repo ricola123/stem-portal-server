@@ -77,6 +77,16 @@ const userSchema = new Schema({
     type: 'String',
     trim: true
   }],
+  followers: [{
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'User'
+  }],
+  following: [{
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'User'
+  }],
   courses: myCourseSchema,
   meterEXP: {
     type: 'Number',
@@ -87,6 +97,10 @@ const userSchema = new Schema({
     type: 'Number',
     default: 0,
     trim: true
+  },
+  lastUpdateCheck: {
+    type: Date,
+    default: Date.now
   }
 });
 

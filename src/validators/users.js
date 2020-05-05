@@ -62,5 +62,10 @@ module.exports = {
     body: Joi.object({
       level: Joi.number().min(0).max(100).required()
     })
+  },
+  followUser: {
+    params: Joi.object({
+      targetId: Joi.objectId().required()
+    })
   }
 }
