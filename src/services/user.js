@@ -166,7 +166,8 @@ class UserService {
         name: post.title,
         content: post.content,
         tags: post.tags,
-        timestamp: post.createdAt
+        timestamp: post.createdAt,
+        type: 'post'
       };
       recentUpdatesByUser[post.author]
         ? recentUpdatesByUser[post.author].push(newPost)
@@ -177,7 +178,8 @@ class UserService {
         name: course.name,
         content: course.description,
         tags: course.tags,
-        timestamp: course.publishedAt
+        timestamp: course.publishedAt,
+        type: 'course'
       };
       recentUpdatesByUser[course.author] 
         ? recentUpdatesByUser[course.author].push(newCourse)
