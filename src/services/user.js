@@ -167,7 +167,7 @@ class UserService {
         content: post.content,
         tags: post.tags,
         timestamp: post.createdAt,
-        type: 'post'
+        type: 'Post'
       };
       recentUpdatesByUser[post.author]
         ? recentUpdatesByUser[post.author].push(newPost)
@@ -179,7 +179,7 @@ class UserService {
         content: course.description,
         tags: course.tags,
         timestamp: course.publishedAt,
-        type: 'course'
+        type: 'Course'
       };
       recentUpdatesByUser[course.author] 
         ? recentUpdatesByUser[course.author].push(newCourse)
@@ -198,7 +198,7 @@ class UserService {
       activities: recentUpdatesByUser[_id]
     }));
 
-    // await User.updateOne({ _id: _userId }, { lastUpdateCheck: new Date });
+    await User.updateOne({ _id: _userId }, { lastUpdateCheck: new Date });
 
     return recentUpdates;
   }
