@@ -1,4 +1,6 @@
 const User = require('../models/users');
+const Course = require('../services/course');
+const Post = require('../services/post');
 
 const AuthService = require('./auth');
 
@@ -148,12 +150,17 @@ class UserService {
   }
 
   async getUpdates (_userId) {
-    const user = await User
+    const { _id, following, lastUpdateCheck } = await User
       .findById(_userId)
       .select('following lastUpdateCheck')
       .lean();
-    console.log(user)
-    return []
+    
+    const [ posts, courses ] = await Promise.all([
+      Post.find({ author: { $in: following }, createdAt: { $gte: lastUpdateCheck } }),
+      Course.find({ author: { $in: following }, published: true, publishedAt: { $gte: lastUpdateCheck } })
+    ]);
+    
+    return [posts, courses];
   }
 }
 

@@ -50,6 +50,10 @@ const courseSchema = new Schema({
     type: 'Boolean',
     default: false
   },
+  publishedAt: {
+    type: Date,
+    required: false
+  },  
   score: { // score is the sum of all ratings
     type: 'Number',
     required: true,
