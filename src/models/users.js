@@ -4,19 +4,21 @@ const bcrypt = require('bcryptjs');
 // schema maps to a collection
 const Schema = mongoose.Schema;
 
+const inProgressCourseSchema = new Schema({
+  _courseId: {
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'Course',
+  },
+  progress: {
+    type: Schema.Types.Mixed,
+    default: {},
+    required: true
+  }
+}, { _id: false })
+
 const myCourseSchema = new Schema({
-  inProgress: [{
-    _courseId: {
-      type: Schema.Types.ObjectId,
-      unique: false,
-      ref: 'Course',
-    },
-    progress: {
-      type: Schema.Types.Mixed,
-      default: {},
-      required: true
-    }
-  }],
+  inProgress: [inProgressCourseSchema],
   finished: [{
     type: Schema.Types.ObjectId,
     unique: false,
