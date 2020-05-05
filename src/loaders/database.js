@@ -1,13 +1,18 @@
 const mongoose = require('mongoose');
 
-module.exports = async () => {
-  mongoose.set('useCreateIndex', true);
-  mongoose.set('useUnifiedTopology', true);
+const conn = mongoose.createConnection(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
-  await mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true });
+conn.on('error', console.error.bind(console, 'Connection to DB error:'));
 
-  const db = mongoose.connection;
-  db.on('error', console.error.bind(console, 'Connection to DB error:'));
+let gfs = new Promise((resolve, reject) => {
+  conn.once("open", () => {
+    resolve(new mongoose.mongo.GridFSBucket(conn.db, {
+      bucketName: "uploads"
+    }));
+  });
+});
 
-  return db;
-}
+module.exports = { conn, gfs: async () => await gfs }
