@@ -47,4 +47,11 @@ module.exports = router => {
     await UserService.updateUserWithPassword(username, password, email, firstName, lastName, school, interests);
     res.status(204).send();
   })
+  router.route('/users/:userId/update-level').post(authorize(), validate(schemas.updateUserMeterLevel), async (req, res) => {
+    const { userId } = req.params;
+    const { level } = req.body;
+    console.log(userId, level)
+    await UserService.updateUserMeterLevel(userId, level);
+    res.status(204).send();
+  })
 };

@@ -82,6 +82,11 @@ const userSchema = new Schema({
     type: 'Number',
     default: 0,
     trim: true
+  },
+  meterLevel: {
+    type: 'Number',
+    default: 0,
+    trim: true
   }
 });
 

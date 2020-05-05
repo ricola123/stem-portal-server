@@ -54,5 +54,13 @@ module.exports = {
       school: Joi.string().min(6).max(50).pattern(/^([^0-9]*)$/).required(),
       interests: Joi.array().min(1).max(10).required()
     })
+  },
+  updateUserMeterLevel: {
+    params: Joi.object({
+      userId: Joi.objectId().required()
+    }),
+    body: Joi.object({
+      level: Joi.number().min(0).max(100).required()
+    })
   }
 }
