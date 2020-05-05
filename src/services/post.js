@@ -1,6 +1,6 @@
 const Post = require('../models/posts');
 
-const UserService = require('../services/user')
+const UserService = require('../services/user');
 const TagService = require('../services/tag');
 const { ResponseError } = require('../utils');
 

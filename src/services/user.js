@@ -1,6 +1,6 @@
 const User = require('../models/users');
-const Course = require('../services/course');
-const Post = require('../services/post');
+const Course = require('../models/courses');
+const Post = require('../models/posts');
 
 const AuthService = require('./auth');
 

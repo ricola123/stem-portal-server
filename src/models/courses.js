@@ -53,7 +53,7 @@ const courseSchema = new Schema({
   publishedAt: {
     type: Date,
     required: false
-  },  
+  },
   score: { // score is the sum of all ratings
     type: 'Number',
     required: true,
