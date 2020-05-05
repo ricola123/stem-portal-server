@@ -161,7 +161,7 @@ class UserService {
     ]);
     
     const recentUpdatesByUser = {};
-    posts.forEach(({ _id, title: name, content, tags, createdAt: timestamp }) => {
+    posts.forEach(({ _id, author, title: name, content, tags, createdAt: timestamp }) => {
       const newPost = {
         _id,
         name,
@@ -170,11 +170,11 @@ class UserService {
         timestamp,
         type: 'Post'
       };
-      recentUpdatesByUser[post.author]
-        ? recentUpdatesByUser[post.author].push(newPost)
-        : recentUpdatesByUser[post.author] = [ newPost ]
+      recentUpdatesByUser[author]
+        ? recentUpdatesByUser[author].push(newPost)
+        : recentUpdatesByUser[author] = [ newPost ]
     });
-    courses.forEach(({ _id, name, description: content, tags, publishedAt: timestamp }) => {
+    courses.forEach(({ _id, author, name, description: content, tags, publishedAt: timestamp }) => {
       const newCourse = {
         _id,
         name,
@@ -183,9 +183,9 @@ class UserService {
         timestamp,
         type: 'Course'
       };
-      recentUpdatesByUser[course.author] 
-        ? recentUpdatesByUser[course.author].push(newCourse)
-        : recentUpdatesByUser[course.author]  = [ newCourse ]
+      recentUpdatesByUser[author] 
+        ? recentUpdatesByUser[author].push(newCourse)
+        : recentUpdatesByUser[author]  = [ newCourse ]
     });
 
     const userDetails = await User
