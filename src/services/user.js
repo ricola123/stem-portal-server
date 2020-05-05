@@ -198,7 +198,7 @@ class UserService {
       activities: recentUpdatesByUser[_id]
     }));
 
-    await User.updateOne({ _id: _userId }, { lastUpdateCheck: new Date });
+    // await User.updateOne({ _id: _userId }, { lastUpdateCheck: new Date });
 
     return recentUpdates;
   }
