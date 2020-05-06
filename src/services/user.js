@@ -155,9 +155,14 @@ class UserService {
       .select('following lastUpdateCheck')
       .lean();
 
+    const checkTime = new Date(lastUpdateCheck);
+    const backTime = (Date.now() - checkTime.getTime()) / 1000 < (3600 * 12)
+      ? new Date(Date.now() - (3600 * 12 * 1000))
+      : lastUpdateCheck;
+    
     const [ posts, courses ] = await Promise.all([
-      Post.find({ author: { $in: following }, createdAt: { $gte: lastUpdateCheck } }),
-      Course.find({ author: { $in: following }, published: true, publishedAt: { $gte: lastUpdateCheck } })
+      Post.find({ author: { $in: following }, createdAt: { $gte: backTime } }),
+      Course.find({ author: { $in: following }, published: true, publishedAt: { $gte: backTime } })
     ]);
     
     const recentUpdatesByUser = {};
