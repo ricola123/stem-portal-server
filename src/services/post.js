@@ -9,7 +9,7 @@ const _ = require('lodash');
 const sanitize = require('sanitize-html');
 
 const sanitizeOptions = {
-  allowedTags: sanitize.defaults.allowedTags.concat([ 'img' ])
+  allowedTags: sanitize.defaults.allowedTags.concat([ 'h1', 'h2', 'u', 'img' ])
 };
 class PostService {
 
