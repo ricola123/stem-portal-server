@@ -8,6 +8,9 @@ const mongoose = require('mongoose');
 const _ = require('lodash');
 const sanitize = require('sanitize-html');
 
+const sanitizeOptions = {
+  allowedTags: sanitize.defaults.allowedTags.concat([ 'img' ])
+};
 class PostService {
 
     async getPosts (paginator) {
@@ -30,7 +33,7 @@ class PostService {
     }
 
     async createPost (author, title, content, tags) {
-        const post = new Post({ author: author.id, title, content: sanitize(content), tags });
+        const post = new Post({ author: author.id, title, content: sanitize(content, sanitizeOptions), tags });
         await Promise.all([
             TagService.updatePostTags(post._id, tags),
             post.save(),
@@ -45,7 +48,7 @@ class PostService {
         if (!post) throw new ResponseError(404, 'post not found');
         if (!updator.id.equals(post.author)) throw new ResponseError(403, 'only authors can update their own posts');
 
-        if (updates.content) updates.content = sanitize(updates.content);
+        if (updates.content) updates.content = sanitize(updates.content, sanitizeOptions);
         post.set(updates);
         if (updates.tags) {
             await Promise.all([
@@ -125,7 +128,7 @@ class PostService {
         }
 
         const _commentId = mongoose.Types.ObjectId();
-        const comment = { _id: _commentId, author: _userId, parent: _parentId, content: sanitize(content) };
+        const comment = { _id: _commentId, author: _userId, parent: _parentId, content: sanitize(content, sanitizeOptions) };
 
         const postComment = () => Post.updateOne({ _id: _postId }, { 
             $push: { comments: comment },
@@ -162,7 +165,7 @@ class PostService {
         if (!comment) throw new ResponseError(404, 'comment not found');
         if (!updator.id.equals(comment.author)) throw new ResponseError(403, 'only the author can update this comment');
 
-        content = sanitize(content);
+        content = sanitize(content, sanitizeOptions);
         if (comment.content === content) return;
 
         await Post.updateOne({ _id: _postId, 'comments._id': _commentId }, {
