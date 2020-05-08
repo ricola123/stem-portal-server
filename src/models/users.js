@@ -4,19 +4,21 @@ const bcrypt = require('bcryptjs');
 // schema maps to a collection
 const Schema = mongoose.Schema;
 
+const inProgressCourseSchema = new Schema({
+  _courseId: {
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'Course',
+  },
+  progress: {
+    type: Schema.Types.Mixed,
+    default: {},
+    required: true
+  }
+}, { _id: false })
+
 const myCourseSchema = new Schema({
-  inProgress: [{
-    _courseId: {
-      type: Schema.Types.ObjectId,
-      unique: false,
-      ref: 'Course',
-    },
-    progress: {
-      type: Schema.Types.Mixed,
-      default: {},
-      required: true
-    }
-  }],
+  inProgress: [inProgressCourseSchema],
   finished: [{
     type: Schema.Types.ObjectId,
     unique: false,
@@ -66,6 +68,9 @@ const userSchema = new Schema({
     type: 'String',
     trim: true
   },
+  avatar: {
+    type: 'String',
+  },
   gender: {
     type: 'String'
   },
@@ -77,11 +82,30 @@ const userSchema = new Schema({
     type: 'String',
     trim: true
   }],
+  followers: [{
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'User'
+  }],
+  following: [{
+    type: Schema.Types.ObjectId,
+    unique: false,
+    ref: 'User'
+  }],
   courses: myCourseSchema,
   meterEXP: {
     type: 'Number',
     default: 0,
     trim: true
+  },
+  meterLevel: {
+    type: 'Number',
+    default: 0,
+    trim: true
+  },
+  lastUpdateCheck: {
+    type: Date,
+    default: Date.now
   }
 });
 

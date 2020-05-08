@@ -31,7 +31,7 @@ module.exports = router => {
   router.route('/courses').post(authorize('teacher'), validate(schemas.createCourse), async (req, res) => {
     const { name, description, tags, chapters } = req.body;
     const author = req.user;
-    const course = await CourseService.createCourse(name, author, description, tags, JSON.stringify(chapters));
+    const { course } = await CourseService.createCourse(name, author, description, tags, JSON.stringify(chapters));
     res.status(201).send({ status: 201, course });
   });
   router.route('/courses/:id').get(authorize('optional'), validate(schemas.getCourse), async (req, res) => {
